@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "BankParser (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "BankParser (Unpackaged)": {
+      "commandName": "Project"
+    },
+    "Executable": {
+      "commandName": "Executable",
+      "executablePath": "C:\\GitHub\\BankParser\\BankParser\\bin\\x64\\Debug\\net6.0-windows10.0.22000.0\\win10-x64\\BankParser.exe"
+    }
+  }
+}
