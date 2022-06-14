@@ -24,21 +24,6 @@ public class BankTransaction
 
     private readonly Regex _withdrawalParser = new(@"(.*)\s%%\s(.*)", RegexOptions.Singleline);
 
-    [JsonProperty("Index")]
-    [JsonConverter(typeof(ParseStringConverter))]
-    public long Index
-    {
-        get;
-        set;
-    }
-
-    [JsonProperty("Transaction Number")]
-    public string TransactionNumber
-    {
-        get;
-        set;
-    }
-
     [JsonProperty("Date")]
     public DateTimeOffset Date
     {
@@ -46,21 +31,7 @@ public class BankTransaction
         set;
     }
 
-    [JsonProperty("Description")]
-    public string Description
-    {
-        get;
-        set;
-    }
-
     public string Type => ParseDescription();
-
-    [JsonProperty("Memo")]
-    public string Memo
-    {
-        get;
-        set;
-    }
 
     public string OtherParty => ParseMemo().Name;
 
@@ -80,6 +51,35 @@ public class BankTransaction
 
     [JsonProperty("Fees")]
     public decimal? Fees
+    {
+        get;
+        set;
+    }
+
+    [JsonProperty("Index")]
+    [JsonConverter(typeof(ParseStringConverter))]
+    public long Index
+    {
+        get;
+        set;
+    }
+
+    [JsonProperty("Transaction Number")]
+    public string TransactionNumber
+    {
+        get;
+        set;
+    }
+
+    [JsonProperty("Description")]
+    public string Description
+    {
+        get;
+        set;
+    }
+
+    [JsonProperty("Memo")]
+    public string Memo
     {
         get;
         set;

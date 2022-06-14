@@ -69,9 +69,9 @@ public sealed partial class ShellPage : Page
 
     private static void OnKeyboardAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        INavigationService navigationService = App.GetService<INavigationService>();
+        INavigationService? navigationService = App.GetService<INavigationService>();
 
-        bool result = navigationService.GoBack();
+        bool result = navigationService?.GoBack() ?? false;
 
         args.Handled = result;
     }

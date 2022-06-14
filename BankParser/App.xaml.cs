@@ -7,13 +7,13 @@ using BankParser.Helpers;
 using BankParser.Models;
 using BankParser.Services;
 using BankParser.ViewModels;
-//using BankParser.Views;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
 using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
 using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
+using BankParser.Views;
 
 // To learn more about WinUI3, see: https://docs.microsoft.com/windows/apps/winui/winui3/.
 namespace BankParser;
@@ -47,8 +47,8 @@ public partial class App : Application
 
             // Views and ViewModels
             services.AddTransient<MainViewModel>();
-            //services.AddTransient<MainPage>();
-            //services.AddTransient<ShellPage>();
+            services.AddTransient<MainPage>();
+            services.AddTransient<ShellPage>();
             services.AddTransient<ShellViewModel>();
 
             // Configuration
@@ -56,11 +56,8 @@ public partial class App : Application
         })
         .Build();
 
-    public static T GetService<T>()
-        where T : class
-    {
-        return _host.Services.GetService(typeof(T)) as T;
-    }
+    public static T? GetService<T>()
+        where T : class => _host.Services.GetService(typeof(T)) as T;
 
     public static Window MainWindow { get; set; } = new() { Title = "AppDisplayName".GetLocalized() };
 
@@ -79,7 +76,10 @@ public partial class App : Application
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
-        IActivationService activationService = App.GetService<IActivationService>();
-        await activationService.ActivateAsync(args);
+        IActivationService? activationService = GetService<IActivationService>();
+        if (activationService is not null)
+        {
+            await activationService.ActivateAsync(args);
+        }
     }
 }

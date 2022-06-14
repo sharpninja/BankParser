@@ -13,18 +13,18 @@ namespace BankParser.Services;
 public class NavigationService : INavigationService
 {
     private readonly IPageService _pageService;
-    private object _lastParameterUsed;
-    private Frame _frame;
+    private object? _lastParameterUsed;
+    private Frame? _frame;
 
-    public event NavigatedEventHandler Navigated;
+    public event NavigatedEventHandler? Navigated;
 
-    public Frame Frame
+    public Frame? Frame
     {
         get
         {
             if (_frame == null)
             {
-                _frame = App.MainWindow.Content as Frame;
+                _frame = (App.MainWindow.Content is Frame f) ? f : null;
                 RegisterFrameEvents();
             }
 
@@ -39,7 +39,7 @@ public class NavigationService : INavigationService
         }
     }
 
-    public bool CanGoBack => Frame.CanGoBack;
+    public bool CanGoBack => Frame?.CanGoBack ?? false;
 
     public NavigationService(IPageService pageService)
     {
@@ -66,8 +66,8 @@ public class NavigationService : INavigationService
     {
         if (CanGoBack)
         {
-            object vmBeforeNavigation = _frame.GetPageViewModel();
-            _frame.GoBack();
+            object? vmBeforeNavigation = _frame?.GetPageViewModel();
+            _frame?.GoBack();
             if (vmBeforeNavigation is INavigationAware navigationAware)
             {
                 navigationAware.OnNavigatedFrom();
@@ -79,14 +79,20 @@ public class NavigationService : INavigationService
         return false;
     }
 
-    public bool NavigateTo(string pageKey, object parameter = null, bool clearNavigation = false)
+    public bool NavigateTo(string pageKey, object? parameter = null, bool clearNavigation = false)
     {
-        Type pageType = _pageService.GetPageType(pageKey);
-
-        if (_frame.Content?.GetType() != pageType || (parameter != null && !parameter.Equals(_lastParameterUsed)))
+        Type? pageType = _pageService.GetPageType(pageKey);
+        if(pageType is null)
         {
-            _frame.Tag = clearNavigation;
-            object vmBeforeNavigation = _frame.GetPageViewModel();
+            return false;
+        }
+
+        if (_frame is not null &&
+            _frame.Content?.GetType() != pageType ||
+            (parameter?.Equals(_lastParameterUsed) == false))
+        {
+            _frame!.Tag = clearNavigation;
+            object? vmBeforeNavigation = _frame!.GetPageViewModel();
             bool navigated = _frame.Navigate(pageType, parameter);
             if (navigated)
             {

@@ -12,7 +12,7 @@ namespace BankParser.ViewModels;
 
 public class MainViewModel : ObservableRecipient, INavigationAware
 {
-    private const string DEFAULT_FILENAME=@"C:\Users\kingd\Downloads\transactions.json";
+    private const string DEFAULT_FILENAME=@"C:\Users\kingd\OneDrive\Desktop\transactions.json";
 
     private readonly ISampleDataService _sampleDataService;
 
@@ -20,6 +20,10 @@ public class MainViewModel : ObservableRecipient, INavigationAware
     {
         get;
     } = null!;
+
+    public IEnumerable<BankTransaction> GroupedTransactions
+        => Source.OrderBy(b => b.OtherParty)
+                .ThenByDescending(b => b.Date);
 
     public MainViewModel(ISampleDataService sampleDataService)
     {

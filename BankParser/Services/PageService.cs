@@ -4,7 +4,7 @@ using System.Linq;
 
 using BankParser.Contracts.Services;
 using BankParser.ViewModels;
-//using BankParser.Views;
+using BankParser.Views;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -16,14 +16,11 @@ public class PageService : IPageService
 {
     private readonly Dictionary<string, Type> _pages = new();
 
-    public PageService()
-    {
-        //Configure<MainViewModel, MainPage>();
-    }
+    public PageService() => Configure<MainViewModel, MainPage>();
 
-    public Type GetPageType(string key)
+    public Type? GetPageType(string key)
     {
-        Type pageType;
+        Type? pageType;
         lock (_pages)
         {
             if (!_pages.TryGetValue(key, out pageType))
@@ -41,7 +38,7 @@ public class PageService : IPageService
     {
         lock (_pages)
         {
-            string key = typeof(VM).FullName;
+            string key = typeof(VM).FullName ?? nameof(VM);
             if (_pages.ContainsKey(key))
             {
                 throw new ArgumentException($"The key {key} is already configured in PageService");

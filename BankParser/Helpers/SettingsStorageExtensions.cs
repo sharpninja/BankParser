@@ -15,10 +15,7 @@ public static class SettingsStorageExtensions
 {
     private const string FileExtension = ".json";
 
-    public static bool IsRoamingStorageAvailable(this ApplicationData appData)
-    {
-        return appData.RoamingStorageQuota == 0;
-    }
+    public static bool IsRoamingStorageAvailable(this ApplicationData appData) => appData.RoamingStorageQuota == 0;
 
     public static async Task SaveAsync<T>(this StorageFolder folder, string name, T content)
     {
@@ -28,32 +25,31 @@ public static class SettingsStorageExtensions
         await FileIO.WriteTextAsync(file, fileContent);
     }
 
-    public static async Task<T> ReadAsync<T>(this StorageFolder folder, string name)
+    public static async Task<T?> ReadAsync<T>(this StorageFolder folder, string name)
     {
         if (!File.Exists(Path.Combine(folder.Path, GetFileName(name))))
         {
             return default;
         }
 
-        StorageFile file = await folder.GetFileAsync($"{name}.json");
-        string fileContent = await FileIO.ReadTextAsync(file);
+        if (folder is not null)
+        {
+            StorageFile file = await folder!.GetFileAsync($"{name}.json");
+            string fileContent = await FileIO.ReadTextAsync(file);
 
-        return await Json.ToObjectAsync<T>(fileContent);
+            return await Json.ToObjectAsync<T>(fileContent);
+        }
+
+        return default;
     }
 
-    public static async Task SaveAsync<T>(this ApplicationDataContainer settings, string key, T value)
-    {
-        settings.SaveString(key, await Json.StringifyAsync(value));
-    }
+    public static async Task SaveAsync<T>(this ApplicationDataContainer settings, string key, T value) => settings.SaveString(key, await Json.StringifyAsync(value));
 
-    public static void SaveString(this ApplicationDataContainer settings, string key, string value)
-    {
-        settings.Values[key] = value;
-    }
+    public static void SaveString(this ApplicationDataContainer settings, string key, string value) => settings.Values[key] = value;
 
-    public static async Task<T> ReadAsync<T>(this ApplicationDataContainer settings, string key)
+    public static async Task<T?> ReadAsync<T>(this ApplicationDataContainer settings, string key)
     {
-        object obj;
+        object? obj;
 
         if (settings.Values.TryGetValue(key, out obj))
         {
@@ -80,21 +76,21 @@ public static class SettingsStorageExtensions
         return storageFile;
     }
 
-    public static async Task<byte[]> ReadFileAsync(this StorageFolder folder, string fileName)
+    public static async Task<byte[]?> ReadFileAsync(this StorageFolder folder, string fileName)
     {
         IStorageItem item = await folder.TryGetItemAsync(fileName).AsTask().ConfigureAwait(false);
 
-        if ((item != null) && item.IsOfType(StorageItemTypes.File))
+        if ((item?.IsOfType(StorageItemTypes.File) == false))
         {
             StorageFile storageFile = await folder.GetFileAsync(fileName);
-            byte[] content = await storageFile.ReadBytesAsync();
+            byte[]? content = await storageFile.ReadBytesAsync();
             return content;
         }
 
         return null;
     }
 
-    public static async Task<byte[]> ReadBytesAsync(this StorageFile file)
+    public static async Task<byte[]?> ReadBytesAsync(this StorageFile file)
     {
         if (file != null)
         {
@@ -109,8 +105,5 @@ public static class SettingsStorageExtensions
         return null;
     }
 
-    private static string GetFileName(string name)
-    {
-        return string.Concat(name, FileExtension);
-    }
+    private static string GetFileName(string name) => string.Concat(name, FileExtension);
 }

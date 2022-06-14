@@ -12,10 +12,10 @@ namespace BankParser.ViewModels;
 
 public class ShellViewModel : ObservableRecipient
 {
-    private bool _isBackEnabled;
-    private object _selected;
-    private ICommand _menuFileExitCommand;
-    private ICommand _menuViewsMainCommand;
+    private bool _isBackEnabled = false;
+    private object? _selected;
+    private ICommand? _menuFileExitCommand;
+    private ICommand? _menuViewsMainCommand;
 
     public ICommand MenuFileExitCommand => _menuFileExitCommand ??= new RelayCommand(OnMenuFileExit);
 
@@ -32,7 +32,7 @@ public class ShellViewModel : ObservableRecipient
         set => SetProperty(ref _isBackEnabled, value);
     }
 
-    public object Selected
+    public object? Selected
     {
         get => _selected;
         set => SetProperty(ref _selected, value);
@@ -48,5 +48,5 @@ public class ShellViewModel : ObservableRecipient
 
     private void OnMenuFileExit() => Application.Current.Exit();
 
-    private void OnMenuViewsMain() => NavigationService.NavigateTo(typeof(MainViewModel).FullName);
+    private void OnMenuViewsMain() => NavigationService.NavigateTo(typeof(MainViewModel).FullName ?? nameof(MainViewModel));
 }
