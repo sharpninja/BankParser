@@ -10,7 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace BankParser.ViewModels;
 
-public class MainViewModel : ObservableRecipient, INavigationAware
+public partial class MainViewModel : ObservableRecipient, INavigationAware
 {
     private const string DEFAULT_FILENAME=@"C:\Users\kingd\OneDrive\Desktop\transactions.json";
 
@@ -24,6 +24,12 @@ public class MainViewModel : ObservableRecipient, INavigationAware
     public IEnumerable<BankTransaction> GroupedTransactions
         => Source.OrderBy(b => b.OtherParty)
                 .ThenByDescending(b => b.Date);
+
+    [ObservableProperty]
+    private BankTransaction? _selected = null;
+
+    [ObservableProperty]
+    private string _filterText;
 
     public MainViewModel(ISampleDataService sampleDataService)
     {

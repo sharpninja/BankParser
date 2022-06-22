@@ -7,6 +7,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 
+using Syncfusion.UI.Xaml.Editors;
+
 using Windows.System;
 
 namespace BankParser.Views;
@@ -75,4 +77,18 @@ public sealed partial class ShellPage : Page
 
         args.Handled = result;
     }
+
+    private void SfComboBox_InputSubmitted(object sender, ComboBoxInputSubmittedEventArgs e)
+    {
+
+    }
+}
+
+public class CustomAsyncFilter : IAutoCompleteFilterBehavior
+{
+    public async Task<object> GetMatchingItemsAsync(SfAutoComplete source, AutoCompleteFilterInfo filterInfo)
+        => source.TextSearchMode switch
+        {
+            _ => Array.Empty<string>()
+        };
 }

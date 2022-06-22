@@ -8,9 +8,11 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Navigation;
 
+using Syncfusion.UI.Xaml.Editors;
+
 namespace BankParser.ViewModels;
 
-public class ShellViewModel : ObservableRecipient
+public partial class ShellViewModel : ObservableRecipient
 {
     private bool _isBackEnabled = false;
     private object? _selected;
@@ -20,6 +22,21 @@ public class ShellViewModel : ObservableRecipient
     public ICommand MenuFileExitCommand => _menuFileExitCommand ??= new RelayCommand(OnMenuFileExit);
 
     public ICommand MenuViewsMainCommand => _menuViewsMainCommand ??= new RelayCommand(OnMenuViewsMain);
+
+    [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
+    private Task Search(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
+
+    [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
+    private Task MenuFileOpen(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
+
+    [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
+    private Task MenuFileClose(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
+
+    [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
+    private Task MenuViewsRules(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
+
+    [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
+    private Task MenuViewsColumns(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
 
     public INavigationService NavigationService
     {

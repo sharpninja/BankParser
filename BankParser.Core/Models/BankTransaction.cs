@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+
 using Newtonsoft.Json;
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 
@@ -85,6 +86,42 @@ public class BankTransaction
         set;
     }
 
+    public IEnumerable<string> PotentialFilters
+    {
+        get
+        {
+            var results = OtherParty
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .SelectMany(s
+                => s.Split('*', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ).ToList();
+
+            var newResult = results.ToList();
+
+            for(int i =0; i < results.Count; i++)
+            {
+                string toFind = i is 0
+                    ? results[i]
+                    : ' ' + results[i];
+
+                Index index = OtherParty.IndexOf(toFind);
+                int nextSpace = OtherParty.IndexOf(' ', index.Value);
+                if (nextSpace > -1) {
+                    int secondSpace = OtherParty.IndexOf(' ', nextSpace+1);
+                    if (secondSpace > -1)
+                    {
+                        newResult.Insert(0, OtherParty[index..(Index)secondSpace]);
+                    }
+                }
+                newResult.Insert(0, OtherParty[index..]);
+            }
+
+            newResult.Insert(0, OtherParty);
+
+            return newResult;
+        }
+    }
+
     private string ParseDescription()
     {
         string[] words = Description.ToLower()
@@ -116,7 +153,7 @@ public class BankTransaction
     private string[] ParseOtherParty(string otherParty)
     {
         string[] parts = otherParty.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        List<string> result = new ();
+        List<string> result = new();
 
         int i = Array.IndexOf(parts, "%%");
         Index index = default;
@@ -295,12 +332,7 @@ public class BankTransaction
 
         matchResult = Match(_changupParser, 3,
             groupArray => new($"Account {groupArray[1].Value}", null, null, null, groupArray[2].Value));
-        if (matchResult.match)
-        {
-            return matchResult.otherParty;
-        }
-
-        return new OtherPartyRecord(Memo, null, null, null, null);
+        return matchResult.match ? matchResult.otherParty : new OtherPartyRecord(Memo, null, null, null, null);
     }
 
     public record OtherPartyRecord(string Name, string Address, string Phone, DateTimeOffset? Date, string Other);

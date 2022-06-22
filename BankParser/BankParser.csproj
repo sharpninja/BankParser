@@ -26,12 +26,12 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0-preview4" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.4.22229.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.0">
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.5.22301.12" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.1">
       <IncludeAssets>all</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.8" />
-    <PackageReference Include="Syncfusion.Grid.WinUI" Version="20.1.0.59" />
+    <PackageReference Include="Syncfusion.Grid.WinUI" Version="20.1.0.61" />
   </ItemGroup>
 
   <ItemGroup>
