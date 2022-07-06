@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
+using ChoETL;
+
 using Newtonsoft.Json;
+
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 
 namespace BankParser.Core.Models;
@@ -24,17 +28,21 @@ public class BankTransaction
         RegexOptions.Singleline);
 
     private readonly Regex _withdrawalParser = new(@"(.*)\s%%\s(.*)", RegexOptions.Singleline);
+    private string _desc;
+    private string _otherParty;
 
-    [JsonProperty("Date")]
-    public DateTimeOffset Date
+    [JsonProperty("Date"), JsonConverter(typeof(DateOnlyConverter))]
+    public DateOnly Date
     {
         get;
         set;
     }
 
-    public string Type => ParseDescription();
+    [JsonIgnore]
+    public string Type => _desc ??= ParseDescription();
 
-    public string OtherParty => ParseMemo().Name;
+    [JsonIgnore]
+    public string OtherParty => _otherParty ??= ParseMemo().Name;
 
     [JsonProperty("Amount Debit")]
     public decimal? AmountDebit
@@ -43,12 +51,19 @@ public class BankTransaction
         set;
     }
 
+    [JsonIgnore]
+    public string? AmountDebitString => AmountDebit?.ToString("C2");
+
     [JsonProperty("Amount Credit")]
+    [ChoCSVRecordField(FieldName = "Amount Credit")]
     public decimal? AmountCredit
     {
         get;
         set;
     }
+
+    [JsonIgnore]
+    public string? AmountCreditString => AmountCredit?.ToString("C2");
 
     [JsonProperty("Fees")]
     public decimal? Fees
@@ -86,6 +101,7 @@ public class BankTransaction
         set;
     }
 
+    [JsonIgnore]
     public IEnumerable<string> PotentialFilters
     {
         get
@@ -98,19 +114,40 @@ public class BankTransaction
 
             var newResult = results.ToList();
 
-            for(int i =0; i < results.Count; i++)
+            for (int i = 0; i < results.Count; i++)
             {
                 string toFind = i is 0
                     ? results[i]
                     : ' ' + results[i];
 
+                if (i is 0 && toFind is "PP" && OtherParty.StartsWith("PP*"))
+                {
+                    toFind = "PP*";
+                    newResult.Insert(0, toFind);
+                    continue;
+                }
+
+                if (!OtherParty.Contains(toFind))
+                {
+                    toFind = $"*{toFind.Trim()}";
+                    if (!OtherParty.Contains(toFind))
+                    {
+                        continue;
+                    }
+                }
                 Index index = OtherParty.IndexOf(toFind);
                 int nextSpace = OtherParty.IndexOf(' ', index.Value);
-                if (nextSpace > -1) {
-                    int secondSpace = OtherParty.IndexOf(' ', nextSpace+1);
+                if (nextSpace > -1)
+                {
+                    int secondSpace = OtherParty.IndexOf(' ', nextSpace + 1);
                     if (secondSpace > -1)
                     {
-                        newResult.Insert(0, OtherParty[index..(Index)secondSpace]);
+                        string term = OtherParty[index..(Index)secondSpace];
+                        if (term.Equals("pp", StringComparison.OrdinalIgnoreCase))
+                        {
+                            term = "PP*";
+                        }
+                        newResult.Insert(0, term);
                     }
                 }
                 newResult.Insert(0, OtherParty[index..]);
@@ -125,7 +162,10 @@ public class BankTransaction
     private string ParseDescription()
     {
         string[] words = Description.ToLower()
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => s.Trim())
+            .Distinct()
+            .ToArray();
 
         return (words.First(), words.Last()) switch
         {
@@ -228,7 +268,9 @@ public class BankTransaction
     private (bool match, OtherPartyRecord otherParty) Match(Regex regex, int expectedCount,
         Func<Group[], OtherPartyRecord> factory)
     {
-        Match matches = regex.Matches(Memo).FirstOrDefault();
+        string toParse = Memo ?? Description;
+
+        Match matches = regex.Matches(toParse).FirstOrDefault();
         GroupCollection groups = matches?.Groups;
         if (groups?.Count != expectedCount)
         {
@@ -268,11 +310,6 @@ public class BankTransaction
 
     private OtherPartyRecord ParseMemo()
     {
-        if (Memo is null or "")
-        {
-            Memo = Description;
-        }
-
         if (Type.Equals("Comment", StringComparison.InvariantCultureIgnoreCase))
         {
             return new("Memo", null, null, null, Memo);
@@ -335,8 +372,158 @@ public class BankTransaction
         return matchResult.match ? matchResult.otherParty : new OtherPartyRecord(Memo, null, null, null, null);
     }
 
-    public record OtherPartyRecord(string Name, string Address, string Phone, DateTimeOffset? Date, string Other);
 
     public static BankTransaction[] FromJson(string json) =>
         JsonConvert.DeserializeObject<BankTransaction[]>(json, Converter.Settings);
+
+    public bool ApplyFilter(Regex filterExpression) => filterExpression.IsMatch(OtherParty);
+
+    public static IEnumerable<BankTransaction> FromCsv(string fileName)
+    {
+        decimal? ReturnNullDecimal() => null;
+        decimal? ParseDecimal(string item)
+            => decimal.TryParse(item, out decimal data)
+                            ? data
+                            : ReturnNullDecimal();
+
+        //var stream = File.OpenText(fileName);
+        var lines = File.ReadAllLines(fileName);
+        //ChoCSVRecordConfiguration typeconfig = new()
+        //{
+        //    ErrorMode = ChoErrorMode.ThrowAndStop,
+        //    QuoteChar = '"',
+        //    Delimiter = ",",
+        //    QuoteAllFields = false,
+        //};
+
+        //typeconfig.CSVRecordFieldConfigurations.Add(
+        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.TransactionNumber))
+        //    {
+        //        FieldName = "Transaction Number",
+        //        QuoteField = true,
+        //        ValueConverter = item => item as string,
+        //    });
+
+        //typeconfig.CSVRecordFieldConfigurations.Add(
+        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.Memo))
+        //    {
+        //        FieldName = "Memo",
+        //        QuoteField = true,
+        //        ValueConverter = item => item as string,
+        //    });
+
+        //typeconfig.CSVRecordFieldConfigurations.Add(
+        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.Description))
+        //    {
+        //        FieldName = "Description",
+        //        QuoteField = true,
+        //        ValueConverter = item => item as string,
+        //    });
+
+        //typeconfig.CSVRecordFieldConfigurations.Add(
+        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.Date))
+        //    {
+        //        FieldName = "Date",
+        //        ValueConverter = item => new CsvDateOnlyConverter().Convert(
+        //            "Date", item, System.Globalization.CultureInfo.CurrentUICulture, out var data)
+        //                        ? data
+        //                        : item,
+        //    });
+
+        //typeconfig.CSVRecordFieldConfigurations.Add(
+        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.AmountCredit))
+        //{
+        //    FieldName = "Amount Credit",
+        //    ValueConverter = item => (item is null or "")
+        //        ? ReturnNullDecimal()
+        //        : ParseDecimal(item as string),
+        //});
+
+        //typeconfig.CSVRecordFieldConfigurations.Add(
+        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.AmountDebit))
+        //{
+        //    FieldName = "Amount Debit",
+        //    ValueConverter = item => (item is null or "")
+        //        ? ReturnNullDecimal()
+        //        : ParseDecimal(item as string),
+        //});
+
+        //typeconfig.CSVRecordFieldConfigurations.Add(
+        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.Fees))
+        //{
+        //    FieldName = "Fees",
+        //    ValueConverter = item => (item is null or "")
+        //        ? ReturnNullDecimal()
+        //        : ParseDecimal(item as string),
+        //});
+
+        var reader = new ChoCSVLiteReader();
+        var rows = reader.ReadLines(lines);
+
+        List<string> fieldNames = new ();
+        foreach (string[] values in rows)
+        {
+            BankTransaction transaction = new();
+            Dictionary<string, string> data = new ();
+            string currentField = fieldNames.FirstOrDefault();
+            bool inQuoted = false;
+            List<string> quotedSections = new ();
+            bool isHeaderRow = !fieldNames.Any();
+            Queue<string> fields = new (fieldNames);
+            for(int i = 0; i < values.Length; i++)
+            {
+                if (isHeaderRow) {
+                    fieldNames.Add(values[i]);
+                }
+                else
+                {
+                    var value = values[i]?.Trim();
+                    if(value is null)
+                    {
+                        currentField = fields.Dequeue();
+                        data.Add(currentField, value);
+                        continue;
+                    }
+                    if (inQuoted && value.EndsWith("\""))
+                    {
+                        quotedSections.Add(value.TrimEnd('\"'));
+                        inQuoted = false;
+                        value = String.Join(", ", quotedSections);
+                        data.Add(currentField, value);
+                    }
+                    else if (value.StartsWith("\""))
+                    {
+                        quotedSections.Clear();
+                        quotedSections.Add(value.TrimStart('\"'));
+                        currentField = fields.Dequeue();
+                        inQuoted = true;
+                    }
+                    else if (inQuoted)
+                    {
+                        quotedSections.Add(value);
+                    }
+                    else
+                    {
+                        currentField = fields.Dequeue();
+                        data.Add(currentField, value);
+                    }
+                }
+            }
+
+            if (data.Count > 0)
+            {
+                transaction.TransactionNumber = data.TryGetValue("Transaction Number", out var tr) ? tr : null;
+                transaction.Description = data.TryGetValue("Description", out var desc) ? desc : null;
+                transaction.Memo = data.TryGetValue("Memo", out var memo) ? memo : null;
+                transaction.Date = DateOnly.Parse(data.TryGetValue("Date", out var date) ? date : null);
+                transaction.AmountCredit = ParseDecimal(data.TryGetValue("Amount Credit", out var credit) ? credit : null);
+                transaction.AmountDebit = ParseDecimal(data.TryGetValue("Amount Debit", out var debit) ? debit : null);
+
+                yield return transaction;
+
+                data.Clear();
+            }
+        }
+
+    }
 }

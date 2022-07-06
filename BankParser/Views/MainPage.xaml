@@ -2,18 +2,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:dataGrid="using:Syncfusion.UI.Xaml.DataGrid" xmlns:models="using:BankParser.Core.Models"
-        xmlns:viewmodels="using:BankParser.ViewModels" xmlns:syncfusion="using:Syncfusion.UI.Xaml.Editors"
+        xmlns:treeGrid="using:Syncfusion.UI.Xaml.TreeGrid" xmlns:models="using:BankParser.Core.Models"
+        xmlns:viewmodels="using:BankParser.ViewModels" xmlns:converters="using:BankParser.Converters"
+        xmlns:syncfusion="using:Syncfusion.UI.Xaml.Editors"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}" x:Name="Main"
+      SizeChanged="Main_SizeChanged"
         DataContext="{Binding ElementName=Main, Path=ViewModel}" mc:Ignorable="d">
     <Page.Resources>
+        <converters:CollectionViewConverter x:Key="CollectionViewConverter" />
         <DataTemplate x:Key="BankItem" x:DataType="models:BankTransaction">
             <TextBlock Text="{x:Bind}" />
         </DataTemplate>
     </Page.Resources>
     <Grid x:Name="ContentArea" ColumnSpacing="8">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -21,38 +23,103 @@
             <ColumnDefinition Width="400" />
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Column="0" Grid.Row="0" x:Uid="Main_Title" Style="{StaticResource PageTitleStyle}" />
-        <dataGrid:SfDataGrid Grid.Column="0" Grid.Row="1" AutoGenerateColumns="False" GridLinesVisibility="Horizontal"
-                Loaded="SfDataGrid_Loaded" AllowSorting="True" AllowGrouping="True" AllowResizingColumns="True"
-                AllowEditing="False" AllowDeleting="False" EnableDataVirtualization="True" UsePLINQ="True"
-                ColumnWidthMode="Star" SelectedItem="{x:Bind ViewModel.Selected, Mode=TwoWay}"
-                ItemsSource="{x:Bind ViewModel.GroupedTransactions, Mode=OneWay}">
-            <dataGrid:SfDataGrid.Columns>
-                <dataGrid:GridDateColumn MappingName="Date" AllowFiltering="True" AllowSorting="True"
+        <treeGrid:SfTreeGrid Grid.Column="0" Grid.Row="0" x:Name="Tree" AutoGenerateColumns="False"
+                GridLinesVisibility="Horizontal" Loaded="SfDataGrid_Loaded" AllowSorting="True"
+                AllowResizingColumns="True" AllowEditing="False" AllowFiltering="True" ColumnWidthMode="Star"
+                DataContext="{Binding ElementName=Main, Path=ViewModel}" SelectedItem="{Binding Selected, Mode=TwoWay}"
+                ItemsSource="{Binding GroupedByDate, Mode=OneWay}" AutoExpandMode="AllNodesExpanded"
+                             NodeExpanded="Tree_NodeExpanded"
+                ChildPropertyName="Children" SelectionMode="Single" ItemsSourceChanged="Tree_ItemsSourceChanged">
+            <treeGrid:SfTreeGrid.Columns>
+                <treeGrid:TreeGridDateColumn MappingName="Date" AllowFiltering="True" AllowSorting="True"
                         ColumnWidthMode="Auto" />
-                <dataGrid:GridTextColumn MappingName="OtherParty" AllowFiltering="True" HeaderText="Name"
+                <treeGrid:TreeGridTextColumn MappingName="OtherParty" AllowFiltering="True" HeaderText="Name"
                         AllowSorting="True" />
-                <dataGrid:GridTextColumn MappingName="Type" AllowFiltering="True" AllowSorting="True"
+                <treeGrid:TreeGridTextColumn MappingName="Type" AllowFiltering="True" AllowSorting="True"
                         ColumnWidthMode="Auto" />
-                <dataGrid:GridTextColumn MappingName="AmountDebit" HeaderText="Debit" AllowSorting="True"
-                        ColumnWidthMode="Auto" />
-                <dataGrid:GridTextColumn MappingName="AmountCredit" HeaderText="Credit" AllowSorting="True"
-                        ColumnWidthMode="Auto" />
-            </dataGrid:SfDataGrid.Columns>
-        </dataGrid:SfDataGrid>
-        <Border Grid.Column="1" Grid.Row="1" Padding="8" DataContext="{x:Bind ViewModel.Selected, Mode=TwoWay}">
+                <treeGrid:TreeGridNumericColumn MappingName="AmountDebit" HeaderText="Debit" AllowSorting="True"
+                        ColumnWidthMode="Auto" TextAlignment="Right" DisplayNumberFormat="C2" />
+                <treeGrid:TreeGridNumericColumn MappingName="AmountCredit" HeaderText="Credit" AllowSorting="True"
+                        ColumnWidthMode="Auto" TextAlignment="Right" DisplayNumberFormat="C2" />
+            </treeGrid:SfTreeGrid.Columns>
+        </treeGrid:SfTreeGrid>
+        <Border Grid.Column="1" Grid.Row="1" Padding="4" Margin="4" CornerRadius="4" BorderThickness="3"
+                BorderBrush="{ThemeResource TextBoxBorderThemeBrush}"
+                Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                DataContext="{x:Bind ViewModel.Selected, Mode=TwoWay}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Style="{ThemeResource SubheaderTextBlockStyle}" Text="{Binding OtherParty}"
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                        Style="{ThemeResource SubheaderTextBlockStyle}" Text="{Binding OtherParty}"
                         HorizontalAlignment="Stretch" HorizontalTextAlignment="Center" />
-                <syncfusion:SfComboBox Grid.Row="1" ItemsSource="{Binding PotentialFilters, Mode=OneWay}"
-                        SelectedItem="{x:Bind ViewModel.FilterText, Mode=TwoWay}" />
+                <syncfusion:SfComboBox Grid.Row="1" Grid.Column="0"
+                        ItemsSource="{x:Bind ViewModel.PotentialFilters, Mode=OneWay}"
+                        SelectedItem="{x:Bind ViewModel.FilterText, Mode=TwoWay}"
+                        Text="{x:Bind ViewModel.FilterText, Mode=OneWay}" />
+                <Button Grid.Row="1" Grid.Column="1" Margin="0, 8, 0 , 0"
+                        Command="{x:Bind ViewModel.AddFilterCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon Glyph="&#xE71C;" />
+                        <TextBlock>Add Filter</TextBlock>
+                    </StackPanel>
+                </Button>
+                <RichTextBlock Grid.Row="2"
+                               Grid.ColumnSpan="2"
+                               Margin="0, 8, 0 , 0"
+                        DataContext="{Binding ElementName=Main, Path=ViewModel.SelectedTransaction}">
+                    <Paragraph FontSize="18">
+                        <Run FontWeight="ExtraBold">Amount Debit:</Run>
+                        <Run Text="{Binding AmountDebitString, Mode=OneWay}" />
+                        <LineBreak />
+                        <Run FontWeight="ExtraBold">Amount Credit:</Run>
+                        <Run Text="{Binding AmountCreditString, Mode=OneWay}" />
+                    </Paragraph>
+                </RichTextBlock>
+                <RichTextBlock Grid.Row="3"  Grid.ColumnSpan="2"
+                               Margin="0, 8, 0 , 0"
+                        DataContext="{Binding ElementName=Main, Path=ViewModel.SelectedTransaction}">
+                    <Paragraph>
+                        <Run FontWeight="ExtraBold">Description:</Run>
+                        <LineBreak />
+                        <Run Text="{Binding Description, Mode=OneWay}" />
+                    </Paragraph>
+                </RichTextBlock>
+                <RichTextBlock Grid.Row="4" Grid.ColumnSpan="2"
+                               Margin="0, 8, 0 , 0"
+                               DataContext="{Binding ElementName=Main, Path=ViewModel.SelectedTransaction}">
+                    <Paragraph>
+                        <Run FontWeight="ExtraBold">Memo:</Run>
+                        <LineBreak />
+                        <Run Text="{Binding Memo, Mode=OneWay}" />
+                    </Paragraph>
+                </RichTextBlock>
+                <RichTextBlock Grid.Row="5" Grid.ColumnSpan="2" Margin="0, 8, 0 , 0">
+                    <Paragraph>
+                        <Run FontWeight="ExtraBold">Total Debits:</Run>
+                        <Run Text="{x:Bind ViewModel.TotalDebits, Mode=OneWay}" />
+                        <Run FontWeight="ExtraBold">Total Credits:</Run>
+                        <Run Text="{x:Bind ViewModel.TotalCredits, Mode=OneWay}" />
+                    </Paragraph>
+                </RichTextBlock>
             </Grid>
+            <Border.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Icon="Copy" Text="Copy"
+                                    Command="{x:Bind ViewModel.CopyCommand}"
+                            CommandParameter="{Binding SelectedText, RelativeSource={RelativeSource TemplatedParent}}" />
+                </MenuFlyout>
+            </Border.ContextFlyout>
         </Border>
     </Grid>
 </Page>

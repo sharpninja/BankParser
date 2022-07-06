@@ -27,9 +27,6 @@ public sealed partial class ShellPage : Page
 
         ViewModel.NavigationService.Frame = NavigationFrame;
 
-        // TODO: Set the title bar icon by updating /Assets/WindowIcon.png.
-        // A custom title bar is required for full window theme and Mica support.
-        // https://docs.microsoft.com/windows/apps/develop/title-bar?tabs=winui3#full-customization
         App.MainWindow.ExtendsContentIntoTitleBar = true;
         App.MainWindow.SetTitleBar(AppTitleBar);
         App.MainWindow.Activated += MainWindow_Activated;
@@ -86,9 +83,9 @@ public sealed partial class ShellPage : Page
 
 public class CustomAsyncFilter : IAutoCompleteFilterBehavior
 {
-    public async Task<object> GetMatchingItemsAsync(SfAutoComplete source, AutoCompleteFilterInfo filterInfo)
-        => source.TextSearchMode switch
+    public Task<object> GetMatchingItemsAsync(SfAutoComplete source, AutoCompleteFilterInfo filterInfo)
+        => Task.FromResult(source.TextSearchMode switch
         {
-            _ => Array.Empty<string>()
-        };
+            _ => (object)Array.Empty<string>()
+        });
 }

@@ -8,12 +8,14 @@ using BankParser.Models;
 using BankParser.Services;
 using BankParser.ViewModels;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
 using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
 using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
 using BankParser.Views;
+using Microsoft.UI.Dispatching;
 
 // To learn more about WinUI3, see: https://docs.microsoft.com/windows/apps/winui/winui3/.
 namespace BankParser;
@@ -27,6 +29,10 @@ public partial class App : Application
     // https://docs.microsoft.com/dotnet/core/extensions/logging
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
+        .ConfigureAppConfiguration(configBuilder =>
+        {
+            configBuilder.AddUserSecrets(typeof(App).Assembly, true);
+        })
         .ConfigureServices((context, services) =>
         {
             // Default Activation Handler
@@ -42,27 +48,35 @@ public partial class App : Application
             services.AddSingleton<INavigationService, NavigationService>();
 
             // Core Services
-            services.AddSingleton<ISampleDataService, SampleDataService>();
             services.AddSingleton<IFileService, FileService>();
 
             // Views and ViewModels
-            services.AddTransient<MainViewModel>();
-            services.AddTransient<MainPage>();
-            services.AddTransient<ShellPage>();
-            services.AddTransient<ShellViewModel>();
+            services.AddSingleton<MainViewModel>();
+            services.AddSingleton<MainPage>();
+            services.AddSingleton<ShellPage>();
+            services.AddSingleton<ShellViewModel>();
+            services.AddSingleton(_ => new Window()
+            {
+                Title = "AppDisplayName".GetLocalized()
+            });
 
             // Configuration
             services.Configure<LocalSettingsOptions>(context.Configuration.GetSection(nameof(LocalSettingsOptions)));
         })
         .Build();
 
+    private static readonly Window? _window = null;
+
     public static T? GetService<T>()
         where T : class => _host.Services.GetService(typeof(T)) as T;
 
-    public static Window MainWindow { get; set; } = new() { Title = "AppDisplayName".GetLocalized() };
+    public static Window MainWindow => _window ?? GetService<Window>()!;
 
     public App()
     {
+        var config = _host.Services.GetRequiredService<IConfiguration>();
+        string? sf = config["SF"];
+        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(sf);
         InitializeComponent();
         UnhandledException += App_UnhandledException;
     }
@@ -82,4 +96,8 @@ public partial class App : Application
             await activationService.ActivateAsync(args);
         }
     }
+
+    internal static void TryDispatch(DispatcherQueueHandler callback)
+        => App.MainWindow.Content.DispatcherQueue.TryEnqueue(callback);
+
 }

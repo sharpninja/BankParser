@@ -27,16 +27,26 @@ public partial class ShellViewModel : ObservableRecipient
     private Task Search(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
 
     [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
-    private Task MenuFileOpen(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
+    private Task MenuFileOpen(SfAutoComplete autoComplete, CancellationToken token) => MainViewModel.OpenFile(token);
 
     [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
-    private Task MenuFileClose(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
+    private Task MenuFileClose(SfAutoComplete autoComplete, CancellationToken token) => MainViewModel.CloseFile();
 
     [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
     private Task MenuViewsRules(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
 
-    [RelayCommand(AllowConcurrentExecutions = false, FlowExceptionsToTaskScheduler = true, IncludeCancelCommand = true)]
-    private Task MenuViewsColumns(SfAutoComplete autoComplete, CancellationToken token) => Task.CompletedTask;
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void MenuUndo() => MainViewModel.Undo();
+    public bool CanUndo() => MainViewModel.CanUndo;
+
+    [RelayCommand(CanExecute = nameof(CanRedo))]
+    private void MenuRedo() => MainViewModel.Redo();
+    public bool CanRedo() => MainViewModel.CanRedo;
+
+    public bool AllowMenuViewsClearFilter() => true;
+
+    [RelayCommand(CanExecute=nameof(AllowMenuViewsClearFilter))]
+    private void MenuViewsClearFilter() => App.GetService<MainViewModel>()?.ClearFilter();
 
     public INavigationService NavigationService
     {
@@ -54,11 +64,23 @@ public partial class ShellViewModel : ObservableRecipient
         get => _selected;
         set => SetProperty(ref _selected, value);
     }
-
-    public ShellViewModel(INavigationService navigationService)
+    public MainViewModel MainViewModel
     {
+        get;
+    }
+
+    public ShellViewModel(MainViewModel mainViewModel, INavigationService navigationService)
+    {
+        MainViewModel = mainViewModel;
+        MainViewModel.PropertyChanged += MainViewModel_PropertyChanged;
         NavigationService = navigationService;
         NavigationService.Navigated += OnNavigated;
+    }
+
+    private void MainViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        MenuUndoCommand.NotifyCanExecuteChanged();
+        MenuRedoCommand.NotifyCanExecuteChanged();
     }
 
     private void OnNavigated(object sender, NavigationEventArgs e) => IsBackEnabled = NavigationService.CanGoBack;

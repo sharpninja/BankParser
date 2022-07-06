@@ -17,6 +17,7 @@
     <PackageCertificateThumbprint>730C3F451E5D738F4902498736864A4BE69FE3D4</PackageCertificateThumbprint>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <StartupObject>BankParser.Program</StartupObject>
+    <UserSecretsId>baa72a82-aacb-4a1d-b97f-fe1843ffefe7</UserSecretsId>
     <!--<WindowsPackageType>None</WindowsPackageType>-->
   </PropertyGroup>
 
@@ -25,13 +26,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ChoETL.JSON.NETStandard" Version="1.2.1.48" />
+    <PackageReference Include="ChoETL.NETStandard" Version="1.2.1.48" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0-preview4" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="7.0.0-preview.5.22301.12" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0-preview.5.22301.12" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.1">
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.2">
       <IncludeAssets>all</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.8" />
-    <PackageReference Include="Syncfusion.Grid.WinUI" Version="20.1.0.61" />
+    <PackageReference Include="Syncfusion.Grid.WinUI" Version="20.2.0.36" />
   </ItemGroup>
 
   <ItemGroup>
