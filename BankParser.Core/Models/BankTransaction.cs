@@ -12,23 +12,9 @@ using Newtonsoft.Json;
 
 namespace BankParser.Core.Models;
 
-public class BankTransaction
+public partial class BankTransaction
 {
-    private readonly Regex _changupParser = new(@"(\d+)\s(.*)", RegexOptions.Singleline);
-    private readonly Regex _checkReceivedParser = new(@"(Check Received [\,\d]+\.\d{2})", RegexOptions.Singleline);
-
-    private readonly Regex _creditParser = new(@"From ([a-zA-Z\s,]*)\s(.*)\s(\d\d/\d\d/\d\d\d\d\s\d\d\:\d\d)\s(.*)",
-        RegexOptions.Singleline);
-
-    private readonly Regex _debitParser = new(@"(.*)\sDate\s(\d\d/\d\d/\d\d)\s(.*)", RegexOptions.Singleline);
-    private readonly Regex _loanPaymentParser = new(@"(Withdrawal Transfer To)\s(Loan\s\d+)", RegexOptions.Singleline);
-    private readonly Regex _transferFromParser = new(@"(Deposit Transfer From)\s(Share\s\d+)", RegexOptions.Singleline);
-
-    private readonly Regex _transferToParser = new(@"Transfer To\s([^\d]*)(.*)\sInternet Banking\s(.*\s\d\d\:\d\d)",
-        RegexOptions.Singleline);
-
-    private readonly Regex _withdrawalParser = new(@"(.*)\s%%\s(.*)", RegexOptions.Singleline);
-    private string _desc;
+    private string _type;
     private string _otherParty;
 
     [JsonProperty("Date"), JsonConverter(typeof(DateOnlyConverter))]
@@ -39,7 +25,7 @@ public class BankTransaction
     }
 
     [JsonIgnore]
-    public string Type => _desc ??= ParseDescription();
+    public string Type => _type ??= ParseDescription();
 
     [JsonIgnore]
     public string OtherParty => _otherParty ??= ParseMemo().Name;
@@ -94,12 +80,19 @@ public class BankTransaction
         set;
     }
 
-    [JsonProperty("Memo")]
+    [JsonProperty(nameof(BankTransaction.Memo))]
     public string Memo
     {
         get;
         set;
     }
+
+    [JsonProperty(nameof(BankTransaction.Metadata))]
+    public BankTransactionMetadata Metadata
+    {
+        get;
+        set;
+    } = new();
 
     [JsonIgnore]
     public IEnumerable<string> PotentialFilters
@@ -265,8 +258,8 @@ public class BankTransaction
         return result.ToArray();
     }
 
-    private (bool match, OtherPartyRecord otherParty) Match(Regex regex, int expectedCount,
-        Func<Group[], OtherPartyRecord> factory)
+    private (bool match, OtherPartyRecord otherParty) Match(
+        Regex regex, int expectedCount, Func<Group[], OtherPartyRecord> factory)
     {
         string toParse = Memo ?? Description;
 
@@ -312,7 +305,7 @@ public class BankTransaction
     {
         if (Type.Equals("Comment", StringComparison.InvariantCultureIgnoreCase))
         {
-            return new("Memo", null, null, null, Memo);
+            return new(nameof(BankTransaction.Memo), null, null, null, Memo);
         }
 
         (bool match, OtherPartyRecord otherParty) matchResult = Match(_transferFromParser, 3,
@@ -372,11 +365,21 @@ public class BankTransaction
         return matchResult.match ? matchResult.otherParty : new OtherPartyRecord(Memo, null, null, null, null);
     }
 
+    public bool ApplyFilter(Regex filterExpression)
+        => filterExpression.IsMatch(OtherParty);
 
+    public bool ApplyFilter(string pattern)
+        => ApplyFilter(
+            new Regex(
+                pattern,
+                RegexOptions.IgnoreCase |
+                RegexOptions.Singleline));
+}
+
+public partial class BankTransaction
+{
     public static BankTransaction[] FromJson(string json) =>
         JsonConvert.DeserializeObject<BankTransaction[]>(json, Converter.Settings);
-
-    public bool ApplyFilter(Regex filterExpression) => filterExpression.IsMatch(OtherParty);
 
     public static IEnumerable<BankTransaction> FromCsv(string fileName)
     {
@@ -388,97 +391,30 @@ public class BankTransaction
 
         //var stream = File.OpenText(fileName);
         var lines = File.ReadAllLines(fileName);
-        //ChoCSVRecordConfiguration typeconfig = new()
-        //{
-        //    ErrorMode = ChoErrorMode.ThrowAndStop,
-        //    QuoteChar = '"',
-        //    Delimiter = ",",
-        //    QuoteAllFields = false,
-        //};
-
-        //typeconfig.CSVRecordFieldConfigurations.Add(
-        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.TransactionNumber))
-        //    {
-        //        FieldName = "Transaction Number",
-        //        QuoteField = true,
-        //        ValueConverter = item => item as string,
-        //    });
-
-        //typeconfig.CSVRecordFieldConfigurations.Add(
-        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.Memo))
-        //    {
-        //        FieldName = "Memo",
-        //        QuoteField = true,
-        //        ValueConverter = item => item as string,
-        //    });
-
-        //typeconfig.CSVRecordFieldConfigurations.Add(
-        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.Description))
-        //    {
-        //        FieldName = "Description",
-        //        QuoteField = true,
-        //        ValueConverter = item => item as string,
-        //    });
-
-        //typeconfig.CSVRecordFieldConfigurations.Add(
-        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.Date))
-        //    {
-        //        FieldName = "Date",
-        //        ValueConverter = item => new CsvDateOnlyConverter().Convert(
-        //            "Date", item, System.Globalization.CultureInfo.CurrentUICulture, out var data)
-        //                        ? data
-        //                        : item,
-        //    });
-
-        //typeconfig.CSVRecordFieldConfigurations.Add(
-        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.AmountCredit))
-        //{
-        //    FieldName = "Amount Credit",
-        //    ValueConverter = item => (item is null or "")
-        //        ? ReturnNullDecimal()
-        //        : ParseDecimal(item as string),
-        //});
-
-        //typeconfig.CSVRecordFieldConfigurations.Add(
-        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.AmountDebit))
-        //{
-        //    FieldName = "Amount Debit",
-        //    ValueConverter = item => (item is null or "")
-        //        ? ReturnNullDecimal()
-        //        : ParseDecimal(item as string),
-        //});
-
-        //typeconfig.CSVRecordFieldConfigurations.Add(
-        //    new ChoCSVRecordFieldConfiguration(nameof(BankTransaction.Fees))
-        //{
-        //    FieldName = "Fees",
-        //    ValueConverter = item => (item is null or "")
-        //        ? ReturnNullDecimal()
-        //        : ParseDecimal(item as string),
-        //});
 
         var reader = new ChoCSVLiteReader();
         var rows = reader.ReadLines(lines);
 
-        List<string> fieldNames = new ();
+        List<string> fieldNames = new();
         foreach (string[] values in rows)
         {
             BankTransaction transaction = new();
-            Dictionary<string, string> data = new ();
+            Dictionary<string, string> data = new();
             string currentField = fieldNames.FirstOrDefault();
             bool inQuoted = false;
-            List<string> quotedSections = new ();
+            List<string> quotedSections = new();
             bool isHeaderRow = !fieldNames.Any();
-            Queue<string> fields = new (fieldNames);
-            for(int i = 0; i < values.Length; i++)
+            Queue<string> fields = new(fieldNames);
+            for (int i = 0; i < values.Length; i++)
             {
-                if (isHeaderRow) {
+                if (isHeaderRow)
+                {
                     fieldNames.Add(values[i]);
                 }
                 else
                 {
                     var value = values[i]?.Trim();
-                    if(value is null)
+                    if (value is null)
                     {
                         currentField = fields.Dequeue();
                         data.Add(currentField, value);
@@ -514,7 +450,7 @@ public class BankTransaction
             {
                 transaction.TransactionNumber = data.TryGetValue("Transaction Number", out var tr) ? tr : null;
                 transaction.Description = data.TryGetValue("Description", out var desc) ? desc : null;
-                transaction.Memo = data.TryGetValue("Memo", out var memo) ? memo : null;
+                transaction.Memo = data.TryGetValue(nameof(BankTransaction.Memo), out var memo) ? memo : null;
                 transaction.Date = DateOnly.Parse(data.TryGetValue("Date", out var date) ? date : null);
                 transaction.AmountCredit = ParseDecimal(data.TryGetValue("Amount Credit", out var credit) ? credit : null);
                 transaction.AmountDebit = ParseDecimal(data.TryGetValue("Amount Debit", out var debit) ? debit : null);
@@ -526,4 +462,19 @@ public class BankTransaction
         }
 
     }
+
+    private static readonly Regex _changupParser = new(@"(\d+)\s(.*)", RegexOptions.Singleline);
+    private static readonly Regex _checkReceivedParser = new(@"(Check Received [\,\d]+\.\d{2})", RegexOptions.Singleline);
+
+    private static readonly Regex _creditParser = new(@"From ([a-zA-Z\s,]*)\s(.*)\s(\d\d/\d\d/\d\d\d\d\s\d\d\:\d\d)\s(.*)",
+        RegexOptions.Singleline);
+
+    private static readonly Regex _debitParser = new(@"(.*)\sDate\s(\d\d/\d\d/\d\d)\s(.*)", RegexOptions.Singleline);
+    private static readonly Regex _loanPaymentParser = new(@"(Withdrawal Transfer To)\s(Loan\s\d+)", RegexOptions.Singleline);
+    private static readonly Regex _transferFromParser = new(@"(Deposit Transfer From)\s(Share\s\d+)", RegexOptions.Singleline);
+
+    private static readonly Regex _transferToParser = new(@"Transfer To\s([^\d]*)(.*)\sInternet Banking\s(.*\s\d\d\:\d\d)",
+        RegexOptions.Singleline);
+
+    private static readonly Regex _withdrawalParser = new(@"(.*)\s%%\s(.*)", RegexOptions.Singleline);
 }
