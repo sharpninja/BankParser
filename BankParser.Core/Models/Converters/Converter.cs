@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace BankParser.Core.Models;
+namespace BankParser.Core.Models.Converters;
 
 internal static class Converter
 {

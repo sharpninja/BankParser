@@ -150,7 +150,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
 
     public bool Remove(TValue item)
     {
-        var index = _items.IndexOf(item);
+        int index = _items.IndexOf(item);
         if (_items.Remove(item))
         {
             OnCollectionChanged(

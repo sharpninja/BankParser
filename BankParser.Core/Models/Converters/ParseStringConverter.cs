@@ -1,17 +1,17 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace BankParser.Core.Models;
+namespace BankParser.Core.Models.Converters;
 
 internal class ParseStringConverter : JsonConverter
 {
     public static readonly ParseStringConverter Singleton = new();
     public override bool CanConvert(Type t) => t == typeof(long) || t == typeof(long?);
 
-    public override object ReadJson(
+    public override object? ReadJson(
         JsonReader reader,
         Type t,
-        object existingValue,
+        object? existingValue,
         JsonSerializer serializer
     )
     {
@@ -20,7 +20,7 @@ internal class ParseStringConverter : JsonConverter
             return null;
         }
 
-        string value = serializer.Deserialize<string>(reader);
+        string? value = serializer.Deserialize<string>(reader);
         long l;
         if (long.TryParse(value, out l))
         {
@@ -32,7 +32,7 @@ internal class ParseStringConverter : JsonConverter
 
     public override void WriteJson(
         JsonWriter writer,
-        object untypedValue,
+        object? untypedValue,
         JsonSerializer serializer
     )
     {

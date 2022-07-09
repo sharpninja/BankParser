@@ -3,5 +3,5 @@
 
 namespace BankParser.Core.Models;
 
-public record OtherPartyRecord(string Name, string Address, string Phone, DateTimeOffset? Date, string Other);
+public record struct OtherPartyRecord(string Name, string? Address, string? Phone, DateTimeOffset? Date, string? Other);
 

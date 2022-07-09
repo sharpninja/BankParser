@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-
+using BankParser.Core.Models.Converters;
 using ChoETL;
 
 using Newtonsoft.Json;
@@ -14,18 +14,18 @@ namespace BankParser.Core.Models;
 
 public partial class BankTransaction
 {
-    private string _type;
-    private string _otherParty;
+    private string? _type;
+    private string? _otherParty;
 
     [JsonProperty("Date"), JsonConverter(typeof(DateOnlyConverter))]
-    public DateOnly Date
+    public DateOnly? Date
     {
         get;
         set;
     }
 
     [JsonIgnore]
-    public string Type => _type ??= ParseDescription();
+    public string? Type => _type ??= ParseDescription();
 
     [JsonIgnore]
     public string OtherParty => _otherParty ??= ParseMemo().Name;
@@ -67,25 +67,25 @@ public partial class BankTransaction
     }
 
     [JsonProperty("Transaction Number")]
-    public string TransactionNumber
+    public string? TransactionNumber
     {
         get;
         set;
-    }
+    } = null!;
 
     [JsonProperty("Description")]
-    public string Description
+    public string? Description
     {
         get;
         set;
-    }
+    } = null!;
 
     [JsonProperty(nameof(BankTransaction.Memo))]
-    public string Memo
+    public string? Memo
     {
         get;
         set;
-    }
+    } = null!;
 
     [JsonProperty(nameof(BankTransaction.Metadata))]
     public BankTransactionMetadata Metadata
@@ -152,8 +152,13 @@ public partial class BankTransaction
         }
     }
 
-    private string ParseDescription()
+    private string? ParseDescription()
     {
+        if(Description is null)
+        {
+            return null;
+        }
+
         string[] words = Description.ToLower()
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(s => s.Trim())
@@ -225,12 +230,12 @@ public partial class BankTransaction
             (bool match, OtherPartyRecord otherParty) matchResult = Match(_debitParser, 4,
                 groupArray => new(groupArray[1].Value, null, null,
                     DateTimeOffset.Parse(groupArray[2].Value), groupArray[3].Value));
-            if (matchResult.match)
+            if (matchResult.match && matchResult.otherParty != default)
             {
                 result.Add(matchResult.otherParty.Name);
-                result.Add(matchResult.otherParty.Address);
-                result.Add(matchResult.otherParty.Phone);
-                result.Add(matchResult.otherParty.Date.ToString());
+                result.Add(matchResult.otherParty.Address ?? "");
+                result.Add(matchResult.otherParty.Phone ?? "");
+                result.Add(matchResult.otherParty.Date?.ToString() ?? "");
             }
         }
 
@@ -259,110 +264,192 @@ public partial class BankTransaction
     }
 
     private (bool match, OtherPartyRecord otherParty) Match(
-        Regex regex, int expectedCount, Func<Group[], OtherPartyRecord> factory)
+        Regex regex, int expectedCount, Func<Group[], OtherPartyRecord?> factory)
     {
-        string toParse = Memo ?? Description;
+        string? toParse = Memo ?? Description;
 
-        Match matches = regex.Matches(toParse).FirstOrDefault();
-        GroupCollection groups = matches?.Groups;
+        if(toParse is null)
+        {
+            return default;
+        }
+
+        Match? matches = regex.Matches(toParse).FirstOrDefault();
+        GroupCollection? groups = matches?.Groups;
         if (groups?.Count != expectedCount)
         {
-            return (false, null);
+            return (false, default);
         }
 
-        Group[] groupArray = groups.Values.ToArray();
-        OtherPartyRecord otherParty = factory.Invoke(groupArray);
-        string[] parsedOtherParty = ParseOtherParty(otherParty.Name);
-
-        if (parsedOtherParty.Length > 0)
+        Group[]? groupArray = groups?.Values.ToArray();
+        if (groupArray is not null)
         {
-            otherParty = otherParty with { Name = parsedOtherParty[0] };
-        }
+            OtherPartyRecord otherParty = factory.Invoke(groupArray) ?? default;
 
-        if (parsedOtherParty.Length > 1)
-        {
-            otherParty = otherParty with { Address = parsedOtherParty[1] };
-        }
-
-        if (parsedOtherParty.Length > 2)
-        {
-            otherParty = otherParty with { Phone = parsedOtherParty[2] };
-        }
-
-        if (parsedOtherParty.Length > 3)
-        {
-            otherParty = otherParty with
+            if (otherParty != default)
             {
-                Date = DateTimeOffset.TryParse(parsedOtherParty[3], out DateTimeOffset value) ? value : default
-            };
+                string[] parsedOtherParty = ParseOtherParty(otherParty.Name);
+
+                if (parsedOtherParty.Length > 0)
+                {
+                    otherParty = otherParty with { Name = parsedOtherParty[0] };
+                }
+
+                if (parsedOtherParty.Length > 1)
+                {
+                    otherParty = otherParty with { Address = parsedOtherParty[1] };
+                }
+
+                if (parsedOtherParty.Length > 2)
+                {
+                    otherParty = otherParty with { Phone = parsedOtherParty[2] };
+                }
+
+                if (parsedOtherParty.Length > 3)
+                {
+                    otherParty = otherParty with
+                    {
+                        Date = DateTimeOffset.TryParse(
+                            parsedOtherParty[3],
+                            out DateTimeOffset value) ? value : default
+                    };
+                }
+
+                return (true, otherParty);
+            }
         }
 
-        return (true, otherParty);
-
+        return (false, default);
     }
 
     private OtherPartyRecord ParseMemo()
     {
+        if (Memo is null || Type is null)
+        {
+            return default;
+        }
+
         if (Type.Equals("Comment", StringComparison.InvariantCultureIgnoreCase))
         {
-            return new(nameof(BankTransaction.Memo), null, null, null, Memo);
+            return new(
+                nameof(BankTransaction.Memo),
+                null,
+                null,
+                null,
+                Memo);
         }
 
-        (bool match, OtherPartyRecord otherParty) matchResult = Match(_transferFromParser, 3,
-            groupArray => new(groupArray[2].Value, null, null, null, groupArray[1].Value));
+        (bool match, OtherPartyRecord otherParty) matchResult =
+            Match(_transferFromParser, 3,
+            groupArray
+                => new(
+                    groupArray[2].Value,
+                    null,
+                    null,
+                    null,
+                    groupArray[1].Value));
+
         if (matchResult.match)
         {
             return matchResult.otherParty;
         }
 
-        matchResult = Match(_transferToParser, 4,
-            groupArray => new(groupArray[1].Value, null, null,
-                DateTimeOffset.Parse(groupArray[3].Value ?? "01/01/1900"), groupArray[2].Value));
+        matchResult = Match(_transferToParser, 4, groupArray
+            => new(
+                groupArray[1].Value,
+                null,
+                null,
+                DateTimeOffset.Parse(
+                    groupArray[3].Value ?? "01/01/1900"),
+                groupArray[2].Value)
+            );
+
         if (matchResult.match)
         {
             return matchResult.otherParty;
         }
 
-        matchResult = Match(_debitParser, 4,
-            groupArray => new(groupArray[1].Value, null, null,
-                DateTimeOffset.Parse(groupArray[2].Value ?? "01/01/1900"), groupArray[3].Value));
+        matchResult = Match(_debitParser, 4, groupArray
+            => new(
+                groupArray[1].Value,
+                null,
+                null,
+                DateTimeOffset.Parse(
+                    groupArray[2].Value ?? "01/01/1900"),
+                groupArray[3].Value)
+            );
+
         if (matchResult.match)
         {
             return matchResult.otherParty;
         }
 
-        matchResult = Match(_loanPaymentParser, 3,
-            groupArray => new(groupArray[2].Value, null, null, null, groupArray[1].Value));
+        matchResult = Match(_loanPaymentParser, 3, groupArray
+            => new(
+                groupArray[2].Value,
+                null,
+                null,
+                null,
+                groupArray[1].Value)
+            );
+
         if (matchResult.match)
         {
             return matchResult.otherParty;
         }
 
-        matchResult = Match(_checkReceivedParser, 2, groupArray => new("Check", null, null, null, groupArray[1].Value));
+        matchResult = Match(_checkReceivedParser, 2, groupArray
+            => new(
+                "Check",
+                null,
+                null,
+                null,
+                groupArray[1].Value)
+            );
+
         if (matchResult.match)
         {
             return matchResult.otherParty;
         }
 
-        matchResult = Match(_withdrawalParser, 3,
-            groupArray => new(groupArray[1].Value, null, null, null, groupArray[2].Value));
+        matchResult = Match(_withdrawalParser, 3, groupArray
+            => new(
+                groupArray[1].Value,
+                null,
+                null,
+                null,
+                groupArray[2].Value)
+            );
+
         if (matchResult.match)
         {
             return matchResult.otherParty;
         }
 
-        matchResult = Match(_creditParser, 5,
-            groupArray => new(groupArray[1].Value, null, null,
+        matchResult = Match(_creditParser, 5,  groupArray
+            => new(
+                groupArray[1].Value,
+                null,
+                null,
                 DateTimeOffset.Parse(groupArray[3].Value ?? "01/01/1900"),
-                $"{groupArray[2].Value} {groupArray[4].Value}"));
+                $"{groupArray[2].Value} {groupArray[4].Value}")
+            );
+
         if (matchResult.match)
         {
             return matchResult.otherParty;
         }
 
         matchResult = Match(_changupParser, 3,
-            groupArray => new($"Account {groupArray[1].Value}", null, null, null, groupArray[2].Value));
-        return matchResult.match ? matchResult.otherParty : new OtherPartyRecord(Memo, null, null, null, null);
+            groupArray => new(
+                $"Account {groupArray[1].Value}",
+                null,
+                null,
+                null,
+                groupArray[2].Value));
+
+        return matchResult.match
+            ? matchResult.otherParty
+            : new OtherPartyRecord(Memo, null, null, null, null);
     }
 
     public bool ApplyFilter(Regex filterExpression)
@@ -378,8 +465,8 @@ public partial class BankTransaction
 
 public partial class BankTransaction
 {
-    public static BankTransaction[] FromJson(string json) =>
-        JsonConvert.DeserializeObject<BankTransaction[]>(json, Converter.Settings);
+    public static BankTransaction[]? FromJson(string json)
+        => JsonConvert.DeserializeObject<BankTransaction[]>(json, Converter.Settings);
 
     public static IEnumerable<BankTransaction> FromCsv(string fileName)
     {
@@ -390,17 +477,17 @@ public partial class BankTransaction
                             : ReturnNullDecimal();
 
         //var stream = File.OpenText(fileName);
-        var lines = File.ReadAllLines(fileName);
+        string[] lines = File.ReadAllLines(fileName);
 
-        var reader = new ChoCSVLiteReader();
-        var rows = reader.ReadLines(lines);
+        ChoCSVLiteReader reader = new ();
+        IEnumerable<string[]> rows = reader.ReadLines(lines);
 
         List<string> fieldNames = new();
         foreach (string[] values in rows)
         {
             BankTransaction transaction = new();
-            Dictionary<string, string> data = new();
-            string currentField = fieldNames.FirstOrDefault();
+            Dictionary<string, string?> data = new();
+            string? currentField = fieldNames.FirstOrDefault();
             bool inQuoted = false;
             List<string> quotedSections = new();
             bool isHeaderRow = !fieldNames.Any();
@@ -413,28 +500,29 @@ public partial class BankTransaction
                 }
                 else
                 {
-                    var value = values[i]?.Trim();
-                    if (value is null)
+                    string? value = values[i]?.Trim();
+                    if (currentField is not null && value is null)
                     {
                         currentField = fields.Dequeue();
                         data.Add(currentField, value);
                         continue;
                     }
-                    if (inQuoted && value.EndsWith("\""))
+                    if (currentField is not null && inQuoted &&
+                        (value?.EndsWith("\"") ?? false))
                     {
                         quotedSections.Add(value.TrimEnd('\"'));
                         inQuoted = false;
                         value = String.Join(", ", quotedSections);
                         data.Add(currentField, value);
                     }
-                    else if (value.StartsWith("\""))
+                    else if (value?.StartsWith("\"") ?? false)
                     {
                         quotedSections.Clear();
                         quotedSections.Add(value.TrimStart('\"'));
                         currentField = fields.Dequeue();
                         inQuoted = true;
                     }
-                    else if (inQuoted)
+                    else if (inQuoted && value is not null)
                     {
                         quotedSections.Add(value);
                     }
@@ -448,12 +536,12 @@ public partial class BankTransaction
 
             if (data.Count > 0)
             {
-                transaction.TransactionNumber = data.TryGetValue("Transaction Number", out var tr) ? tr : null;
-                transaction.Description = data.TryGetValue("Description", out var desc) ? desc : null;
-                transaction.Memo = data.TryGetValue(nameof(BankTransaction.Memo), out var memo) ? memo : null;
-                transaction.Date = DateOnly.Parse(data.TryGetValue("Date", out var date) ? date : null);
-                transaction.AmountCredit = ParseDecimal(data.TryGetValue("Amount Credit", out var credit) ? credit : null);
-                transaction.AmountDebit = ParseDecimal(data.TryGetValue("Amount Debit", out var debit) ? debit : null);
+                transaction.TransactionNumber = data.TryGetValue("Transaction Number", out string? tr) ? tr : null;
+                transaction.Description = data.TryGetValue("Description", out string? desc) ? desc : null;
+                transaction.Memo = data.TryGetValue(nameof(BankTransaction.Memo), out string? memo) ? memo : null;
+                transaction.Date = data.TryGetValue("Date", out string? date) ? DateOnly.Parse(date!) : null;
+                transaction.AmountCredit = data.TryGetValue("Amount Credit", out string? credit) ? ParseDecimal(credit!) : null;
+                transaction.AmountDebit = data.TryGetValue("Amount Debit", out string? debit) ? ParseDecimal(debit!) : null;
 
                 yield return transaction;
 

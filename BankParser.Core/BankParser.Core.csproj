@@ -6,11 +6,17 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
     <Platforms>x86;x64;arm64;AnyCPU</Platforms>
     <LangVersion>latest</LangVersion>
+    <ImplicitUsings>Enable</ImplicitUsings>
+    <Nullable>Enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="ChoETL.JSON.NETStandard" Version="1.2.1.48" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Collections.Concurrent" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\Actions\" />
   </ItemGroup>
 </Project>

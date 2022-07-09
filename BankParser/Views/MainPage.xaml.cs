@@ -74,7 +74,7 @@ public sealed partial class MainPage
 
     private void SfDataGrid_Loaded(object sender, RoutedEventArgs e)
     {
-        if(sender is SfTreeGrid grid)
+        if(sender is SfTreeGrid)
         {
 
         }
@@ -89,10 +89,7 @@ public sealed partial class MainPage
     {
     }
 
-    private void Main_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        ResizeColumns();
-    }
+    private void Main_SizeChanged(object sender, SizeChangedEventArgs e) => ResizeColumns();
 
     private void ResizeColumns()
     {

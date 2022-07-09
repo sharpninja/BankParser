@@ -54,3 +54,7 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>", Scope = "member", Target = "~P:BankParser.Services.NavigationService.Frame")]
 [assembly: SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>", Scope = "member", Target = "~P:BankParser.Services.ThemeSelectorService.Theme")]
 [assembly: SuppressMessage("Style", "IDE0021:Use block body for constructors", Justification = "<Pending>", Scope = "member", Target = "~M:BankParser.Services.PageService.#ctor")]
+[assembly: SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "<Pending>", Scope = "member", Target = "~M:BankParser.ViewModels.MainViewModel.SetGroupByDate(System.Collections.Generic.IEnumerable{System.Object})")]
+[assembly: SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "<Pending>", Scope = "member", Target = "~M:BankParser.ViewModels.MainViewModel.ClearFilter")]
+[assembly: SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "<Pending>", Scope = "member", Target = "~M:BankParser.ViewModels.MainViewModel.Undo")]
+[assembly: SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "<Pending>", Scope = "member", Target = "~M:BankParser.ViewModels.MainViewModel.Redo")]

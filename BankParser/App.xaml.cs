@@ -29,10 +29,7 @@ public partial class App : Application
     // https://docs.microsoft.com/dotnet/core/extensions/logging
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
-        .ConfigureAppConfiguration(configBuilder =>
-        {
-            configBuilder.AddUserSecrets(typeof(App).Assembly, true);
-        })
+        .ConfigureAppConfiguration(configBuilder => configBuilder.AddUserSecrets(typeof(App).Assembly, true))
         .ConfigureServices((context, services) =>
         {
             // Default Activation Handler

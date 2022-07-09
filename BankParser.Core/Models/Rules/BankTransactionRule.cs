@@ -4,11 +4,11 @@ using System.Linq;
 
 using ChoETL;
 
-using static BankParser.Core.Models.BankTransactionRuleResolver;
+using static BankParser.Core.Models.Rules.BankTransactionRuleResolver;
 
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 
-namespace BankParser.Core.Models;
+namespace BankParser.Core.Models.Rules;
 
 public record struct BankTransactionRule<TDelegate>(
     string RuleName,
@@ -18,7 +18,7 @@ public record struct BankTransactionRule<TDelegate>(
     where TDelegate : Delegate
 {
     private bool InvokeResolver(BankTransaction trx)
-        => (bool)SelectionResolver.Predicate.DynamicInvoke(trx);
+        => (bool?)SelectionResolver.Predicate.DynamicInvoke(trx) ?? false;
 
     public void ApplyRule(IEnumerable<BankTransaction> transactions)
     {
@@ -33,7 +33,7 @@ public record struct BankTransactionRule<TDelegate>(
 public record struct BankTransactionRule
 {
     private static Dictionary<RuleTypes, BankTransactionRuleResolver<Delegate>> AvailableRules
-        =>  new ()
+        => new()
             {
                 { RuleTypes.IsEqualToRule, new(GetMathHandler(Comparisons.IsEqualTo)) },
                 { RuleTypes.IsLessThanRule, new (GetMathHandler(Comparisons.IsLessThan)) },
@@ -51,9 +51,9 @@ public record struct BankTransactionRule
             };
 
     private static BankTransactionRuleResolver<Delegate> GetDelegate(RuleTypes ruleType)
-        => AvailableRules.TryGetValue(ruleType, out BankTransactionRuleResolver<Delegate> del)
+        => AvailableRules.TryGetValue(ruleType, out var del)
             ? del : default;
 
     public static BankTransactionRule<Delegate> GetRule(RuleTypes ruleType, Action<BankTransaction> action)
-        => new (ruleType.ToString(), GetDelegate(ruleType), action);
+        => new(ruleType.ToString(), GetDelegate(ruleType), action);
 }

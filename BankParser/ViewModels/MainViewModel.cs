@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 using ABI.Windows.Media.Devices;
@@ -34,8 +35,8 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     private const string DEFAULT_FILENAME = @"C:\Users\kingd\OneDrive\Desktop\transactions.json";
 
     private NotifyingList<BankTransaction> _source = null!;
-    private ConcurrentStack<string> _redoStack;
-    private ConcurrentStack<string> _undoStack;
+    private ConcurrentStack<string> _redoStack = new();
+    private ConcurrentStack<string> _undoStack = new();
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(FilerSelectedVisibility))]
     private string? _filterText;
@@ -109,11 +110,24 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
             }
             else
             {
-                GroupedByDate.AddRange(objects
+                GroupedByDate.AddRange(objects);
+
+                IEnumerable<IGrouping<DateOnly, BankTransaction>> grouped = GroupedByDate
                     .OfType<BankTransaction>()
-                    .GroupBy(i => i.Date)
-                    .Select(g => new DateGroup(g.Key, g.OfType<BankTransaction>().Cast<object>().ToList()))
-                    .Cast<object>());
+                    .Where(bt => bt.Date is not null)
+                    .GroupBy(i => (DateOnly)i.Date!);
+
+                GroupedByDate = new(
+                    grouped
+                        .Select(
+                            g => new DateGroup(
+                                g.Key,
+                                g.OfType<BankTransaction>()
+                                        .Cast<object>()
+                                        .ToList()
+                                        )
+                            )
+                        .Cast<object>());
             }
         }
     }
@@ -122,7 +136,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     {
         if (fileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
         {
-            Unmodified = BankTransaction.FromJson(File.ReadAllText(fileName)).ToList();
+            Unmodified = BankTransaction.FromJson(File.ReadAllText(fileName))?.ToList() ?? new();
         }
         else if (fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
         {
@@ -326,7 +340,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     {
         string json = JsonConvert.SerializeObject(this);
 
-        if(UndoStack.TryPeek(out string old) ? old == json : false)
+        if(UndoStack.TryPeek(out string? old) ? old == json : false)
         {
             return;
         }
@@ -388,7 +402,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     {
         if (CanUndo)
         {
-            if (UndoStack.TryPop(out var json))
+            if (UndoStack.TryPop(out string? json))
             {
                 AddRedo();
 
@@ -405,7 +419,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     {
         if (CanRedo)
         {
-            if (RedoStack.TryPop(out var json))
+            if (RedoStack.TryPop(out string? json))
             {
                 MainViewModel? anon = JsonConvert.DeserializeAnonymousType(json, this);
 
