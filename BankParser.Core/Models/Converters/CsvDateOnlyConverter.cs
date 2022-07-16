@@ -19,7 +19,7 @@ public class CsvDateOnlyConverter : IChoConvertible
         {
             string s => DateOnly.Parse(s),
             DateOnly d => d.ToString(),
-            _ => null
+            _ => null,
         };
 
         return convPropValue is not null;
@@ -35,7 +35,7 @@ public class CsvDateOnlyConverter : IChoConvertible
         {
             string s => DateOnly.Parse(s, culture),
             DateOnly d => d.ToString(),
-            _ => null
+            _ => null,
         };
 
         return convPropValue is not null;

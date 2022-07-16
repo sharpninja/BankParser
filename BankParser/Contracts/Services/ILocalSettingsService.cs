@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace BankParser.Contracts.Services;
+﻿namespace BankParser.Contracts.Services;
 
 public interface ILocalSettingsService
 {

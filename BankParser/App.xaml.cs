@@ -1,5 +1,4 @@
-﻿using Windows.ApplicationModel.Activation;
-using BankParser.Activation;
+﻿using BankParser.Activation;
 using BankParser.Contracts.Services;
 using BankParser.Core.Contracts.Services;
 using BankParser.Core.Services;
@@ -54,7 +53,7 @@ public partial class App : Application
             services.AddSingleton<ShellViewModel>();
             services.AddSingleton(_ => new Window()
             {
-                Title = "AppDisplayName".GetLocalized()
+                Title = "AppDisplayName".GetLocalized(),
             });
 
             // Configuration

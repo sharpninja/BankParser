@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-using BankParser.Contracts.Services;
+﻿using BankParser.Contracts.Services;
 using BankParser.Core.Helpers;
 
 using Windows.Storage;

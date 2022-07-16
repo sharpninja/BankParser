@@ -4,11 +4,7 @@ using System.ComponentModel;
 using BankParser.ViewModels;
 
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 
-using Newtonsoft.Json.Linq;
-
-using Syncfusion.UI.Xaml.DataGrid;
 using Syncfusion.UI.Xaml.TreeGrid;
 
 namespace BankParser.Views;

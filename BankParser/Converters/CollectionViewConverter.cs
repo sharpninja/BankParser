@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using BankParser.Core.Models;
 using BankParser.ViewModels;
@@ -11,6 +6,7 @@ using BankParser.ViewModels;
 using Microsoft.UI.Xaml.Data;
 
 namespace BankParser.Converters;
+
 public class CollectionViewConverter : IValueConverter
 {
     public object? Convert(object value, Type targetType, object parameter, string language)

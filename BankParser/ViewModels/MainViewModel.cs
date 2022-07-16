@@ -1,47 +1,56 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
-using ABI.Windows.Media.Devices;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage.Pickers;
 
 using BankParser.Contracts.ViewModels;
-using BankParser.Core.Contracts.Services;
 using BankParser.Core.Models;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Data;
 
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
-using Windows.ApplicationModel.DataTransfer;
-using Windows.Foundation.Collections;
-using Windows.Storage;
-using Windows.Storage.Pickers;
+using WinRT.Interop;
+
+using Syncfusion.UI.Xaml.Editors;
+
+// ReSharper disable SuggestVarOrType_Elsewhere
+// ReSharper disable SuggestVarOrType_SimpleTypes
 
 namespace BankParser.ViewModels;
 
 public partial class MainViewModel : ObservableRecipient, INavigationAware
 {
-    private const string DEFAULT_FILENAME = @"C:\Users\kingd\OneDrive\Desktop\transactions.json";
+    // ReSharper disable once UnusedMember.Global
+    public const string DEFAULT_FILENAME = @"C:\Users\kingd\OneDrive\Desktop\transactions.json";
 
     private NotifyingList<BankTransaction> _source = null!;
-    private ConcurrentStack<string> _redoStack = new();
-    private ConcurrentStack<string> _undoStack = new();
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(FilerSelectedVisibility))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(FilerSelectedVisibility)), ]
     private string? _filterText;
 
-    private BankTransaction? _selected = null;
+    [ObservableProperty]
+    private SfComboBoxItem? _selectedProperty;
+
+    public PropertyInfo? SelectedPropertyInfo => (_selectedProperty?
+            .Content as string ?? "Other") switch
+    {
+        "Desc" => typeof(BankTransaction).GetProperty(nameof(BankTransaction.Description)),
+        "Memo" => typeof(BankTransaction).GetProperty(nameof(BankTransaction.Memo)),
+        "Date" => typeof(BankTransaction).GetProperty(nameof(BankTransaction.Date)),
+        "Deposit" => typeof(BankTransaction).GetProperty(nameof(BankTransaction.AmountCredit)),
+        "Withdrawal" => typeof(BankTransaction).GetProperty(nameof(BankTransaction.AmountDebit)),
+        _ => typeof(BankTransaction).GetProperty(nameof(BankTransaction.OtherParty)),
+    };
+
 
     [JsonIgnore]
     private List<BankTransaction> Unmodified
@@ -52,13 +61,15 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
 
     [JsonIgnore]
     public List<string> PotentialFilters =>
-        (_selected is BankTransaction bt)
+        SelectedTransaction is
+        {
+        } bt
             ? bt.PotentialFilters.ToList()
             : new();
 
     [JsonIgnore]
     public Visibility FilerSelectedVisibility
-        => _filterText is not (null or "") && _selected is BankTransaction
+        => _filterText is not (null or "") && SelectedTransaction is not null
             ? Visibility.Visible
             : Visibility.Collapsed;
 
@@ -88,7 +99,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
             }
             else
             {
-                SetGroupByDate(Unmodified.OfType<object>());
+                SetGroupByDate(Unmodified);
             }
         }
 
@@ -101,35 +112,38 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     private void SetGroupByDate(IEnumerable<object> objects)
     {
         GroupedByDate.Clear();
-        if (objects.Any())
+
+        List<object> items = objects.ToList();
+
+        if (!items.Any())
         {
-            int count = objects.Count();
-            if (count != Unmodified.Count)
-            {
-                GroupedByDate.AddRange(objects);
-            }
-            else
-            {
-                GroupedByDate.AddRange(objects);
-
-                IEnumerable<IGrouping<DateOnly, BankTransaction>> grouped = GroupedByDate
-                    .OfType<BankTransaction>()
-                    .Where(bt => bt.Date is not null)
-                    .GroupBy(i => (DateOnly)i.Date!);
-
-                GroupedByDate = new(
-                    grouped
-                        .Select(
-                            g => new DateGroup(
-                                g.Key,
-                                g.OfType<BankTransaction>()
-                                        .Cast<object>()
-                                        .ToList()
-                                        )
-                            )
-                        .Cast<object>());
-            }
+            return;
         }
+
+        int count = items.Count;
+        if (count != Unmodified.Count)
+        {
+            GroupedByDate.AddRange(items);
+        }
+        else
+        {
+            IEnumerable<IGrouping<DateOnly, BankTransaction>> grouped =
+                items.OfType<BankTransaction>()
+                    .Where(static bt => bt.Date is not null)
+                    .GroupBy(static i => (DateOnly)i.Date!);
+
+            GroupedByDate.AddRange(
+                grouped.Select(
+                    static g => new DateGroup(
+                    g.Key,
+                    g.Cast<object>().ToList()
+                )).Cast<object>());
+        }
+
+        OnPropertyChanged(nameof(MainViewModel.TotalCredits));
+        OnPropertyChanged(nameof(MainViewModel.TotalDebits));
+
+        OnPropertyChanged(nameof(MainViewModel));
     }
 
     private void LoadData(string fileName)
@@ -144,8 +158,9 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
         }
 
         Source = new(Unmodified);
-        SetGroupByDate(Unmodified);
+        SetGroupByDate(Source);
 
+        // ReSharper disable once ExplicitCallerInfoArgument
         OnPropertyChanged("Reset");
     }
 
@@ -164,9 +179,17 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
 
     internal void ApplyFilter()
     {
+        object? currentlySelected;
+
         if (FilterExpression is not null)
         {
-            object? curentlySelected = Selected;
+            currentlySelected = Selected;
+
+            if (currentlySelected is null)
+            {
+                throw new ArgumentNullException(nameof(currentlySelected));
+            }
+
             string? filterText = FilterText;
             ConcurrentBag<BankTransaction> visibleItems = new();
 
@@ -178,25 +201,29 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
                 }
             });
 
-            if (visibleItems.Count > 0)
+            if (visibleItems.Count <= 0)
             {
-                void Callback()
-                {
-                    Source.Clear();
-
-                    var filtered =
-                        visibleItems
-                            .OrderByDescending(i => i.Date)
-                            .ToList();
-
-                    Source.AddRange(filtered);
-
-                    Selected = curentlySelected;
-                    FilterText = filterText;
-                }
-
-                App.TryDispatch(Callback);
+                return;
             }
+
+            void Callback()
+            {
+                var filtered =
+                    visibleItems.OrderByDescending(
+                        static i => i.Date)
+                        .ToList();
+
+                Source.Clear();
+                Source.AddRange(filtered);
+
+                GroupedByDate.Clear();
+                GroupedByDate.AddRange(Source);
+
+                Selected = currentlySelected;
+                FilterText = filterText;
+            }
+
+            App.TryDispatch(Callback);
         }
         else
         {
@@ -216,33 +243,36 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     [RelayCommand]
     private void AddFilter()
     {
-        if (FilterText is not (null or ""))
+        if (FilterText is null or "")
         {
-            string filterText = FilterText;
-            FilterText = null;
-            AddUndo();
-            FilterText = filterText;
-
-            CurrentFilter = FilterText;
-            if (CurrentFilter is not null)
-            {
-                FilterExpression = new Regex(Regex.Escape(CurrentFilter),
-                    RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-                ApplyFilter();
-            }
+            return;
         }
+
+        string filterText = FilterText.Trim();
+        FilterText = null;
+        AddUndo();
+        FilterText = filterText;
+
+        CurrentFilter = FilterText;
+
+        if (CurrentFilter is null)
+        {
+            return;
+        }
+
+        FilterExpression = new Regex(Regex.Escape(CurrentFilter),
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+        ApplyFilter();
     }
 
     internal void ClearFilter()
     {
         CurrentFilter = null;
         List<BankTransaction> list =
-            Unmodified
-                .OrderByDescending(i => i.Date)
-                .ToList();
+            Unmodified.OrderByDescending(static i => i.Date).ToList();
 
-        void callback()
+        void Callback()
         {
             try
             {
@@ -255,7 +285,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
             }
         }
 
-        App.TryDispatch(callback);
+        App.TryDispatch(Callback);
     }
 
     internal async Task OpenFile(CancellationToken token)
@@ -264,22 +294,23 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
         {
             FileOpenPicker fileOpenPicker = new();
 
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-            WinRT.Interop.InitializeWithWindow.Initialize(fileOpenPicker, hwnd);
+            var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+            InitializeWithWindow.Initialize(fileOpenPicker, hwnd);
 
             fileOpenPicker.ViewMode = PickerViewMode.List;
             fileOpenPicker.SuggestedStartLocation = PickerLocationId.Downloads;
             fileOpenPicker.FileTypeFilter.Add(".csv");
             var result = await fileOpenPicker.PickSingleFileAsync();
 
-            if (result is not null)
-            {
-                LoadData(result.Path);
-            }
+            LoadData(
+                result is not null
+                    ? result.Path
+                    : @"C:\Users\kingd\Downloads\payton-009-export.csv"
+            );
         }
         catch
         {
-
+            // Ignore
         }
     }
 
@@ -293,7 +324,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
             {
                 Source.Clear();
                 Source.AddRange(
-                Unmodified.OrderByDescending(i => i.Date).ToList());
+                Unmodified.OrderByDescending(static i => i.Date).ToList());
             });
 
         return Task.CompletedTask;
@@ -321,26 +352,32 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     } = null!;
 
     [JsonIgnore]
-    public string TotalCredits => ((GroupedByDate.FirstOrDefault() is BankTransaction)
-        ? GroupedByDate.OfType<BankTransaction>().Sum(i => i.AmountCredit) ?? decimal.Zero
+    public string TotalCredits => (GroupedByDate.FirstOrDefault() is BankTransaction
+        ? GroupedByDate.OfType<BankTransaction>().Sum(static i => i.AmountCredit) ?? decimal.Zero
         : decimal.Zero).ToString("C2");
 
     [JsonIgnore]
-    public string TotalDebits => ((GroupedByDate.FirstOrDefault() is BankTransaction)
-        ? GroupedByDate.OfType<BankTransaction>().Sum(i => i.AmountDebit) ?? decimal.Zero
+    public string TotalDebits => (GroupedByDate.FirstOrDefault() is BankTransaction
+        ? GroupedByDate.OfType<BankTransaction>().Sum(static i => i.AmountDebit) ?? decimal.Zero
         : decimal.Zero).ToString("C2");
 
     [JsonIgnore]
-    public ConcurrentStack<string> UndoStack => _undoStack ??= new();
+    public ConcurrentStack<string> UndoStack
+    {
+        get;
+    } = new();
 
     [JsonIgnore]
-    public ConcurrentStack<string> RedoStack => _redoStack ??= new();
+    public ConcurrentStack<string> RedoStack
+    {
+        get;
+    } = new();
 
     public void AddUndo()
     {
         string json = JsonConvert.SerializeObject(this);
 
-        if(UndoStack.TryPeek(out string? old) ? old == json : false)
+        if(UndoStack.TryPeek(out string? old) && (old == json))
         {
             return;
         }
@@ -358,7 +395,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     [JsonIgnore]
     public NotifyingList<BankTransaction> Source
     {
-        get => _source ??= new ();
+        get => _source;
         set
         {
             if (SetProperty(ref _source, value))
@@ -370,25 +407,25 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
 
     public object? Selected
     {
-        get => _selected;
+        get => SelectedTransaction;
         set
         {
-            if (value == _selected)
+            if (value == SelectedTransaction)
             {
                 return;
             }
 
             if (value is BankTransaction transaction)
             {
-                _selected = transaction;
+                SelectedTransaction = transaction;
                 AddFilterCommand.NotifyCanExecuteChanged();
                 OnPropertyChanged(nameof(SelectedTransaction));
                 OnPropertyChanged(nameof(Selected));
                 OnPropertyChanged(nameof(PotentialFilters));
             }
-            else if (_selected is not null)
+            else if (SelectedTransaction is not null)
             {
-                _selected = null;
+                SelectedTransaction = null;
                 AddFilterCommand.NotifyCanExecuteChanged();
                 OnPropertyChanged(nameof(SelectedTransaction));
                 OnPropertyChanged(nameof(Selected));
@@ -396,53 +433,66 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
             }
         }
     }
-    public BankTransaction? SelectedTransaction => _selected;
+    public BankTransaction? SelectedTransaction
+    {
+        get;
+        private set;
+    }
 
     public void Undo()
     {
-        if (CanUndo)
+        if (!CanUndo)
         {
-            if (UndoStack.TryPop(out string? json))
-            {
-                AddRedo();
+            return;
+        }
 
-                MainViewModel? anon = JsonConvert.DeserializeAnonymousType(json, this);
+        if (!UndoStack.TryPop(out string? json))
+        {
+            return;
+        }
 
-                if (anon is not null)
-                {
-                    Merge(anon);
-                }
-            }
+        AddRedo();
+
+        MainViewModel? anon =
+            JsonConvert
+                .DeserializeAnonymousType(json, this);
+
+        if (anon is not null)
+        {
+            Merge(anon);
         }
     }
     public void Redo()
     {
-        if (CanRedo)
+        if (!CanRedo)
         {
-            if (RedoStack.TryPop(out string? json))
-            {
-                MainViewModel? anon = JsonConvert.DeserializeAnonymousType(json, this);
-
-                if (anon is not null)
-                {
-                    AddUndo();
-                    Merge(anon);
-                }
-            }
+            return;
         }
+
+        if (!RedoStack.TryPop(out string? json))
+        {
+            return;
+        }
+
+        MainViewModel? anon =
+            JsonConvert
+                .DeserializeAnonymousType(json, this);
+
+        if (anon is null)
+        {
+            return;
+        }
+
+        AddUndo();
+        Merge(anon);
     }
 
     private void Merge(MainViewModel anon)
     {
         FilterText = anon.FilterText;
-        if (FilterText is not (null or ""))
-        {
-            FilterExpression = new Regex(FilterText);
-        }
-        else
-        {
-            FilterExpression = null;
-        }
+        FilterExpression = FilterText is not (null or "")
+            ? new Regex(FilterText)
+            : null;
         CurrentFilter = anon.CurrentFilter;
         ApplyFilter();
 
@@ -454,9 +504,9 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
     }
 
     [RelayCommand]
-    public void Copy(object text)
+    public void Copy(object? text)
     {
-        var request = new DataPackage()
+        var request = new DataPackage
         {
             RequestedOperation = DataPackageOperation.Copy,
         };
@@ -464,5 +514,96 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware
         request.SetText(text?.ToString());
 
         Clipboard.SetContent(request);
+    }
+
+    [ RelayCommand ]
+    public void Search(SfAutoComplete autoComplete)
+    {
+        string pattern = autoComplete.Text;
+        Func<BankTransaction, bool> filter =
+            trx => false;
+
+        switch (SelectedPropertyInfo?.PropertyType.Name)
+        {
+            case "String":
+                Regex regex = new(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+                filter = trx
+                    => SelectedPropertyInfo.GetValue(trx) is string value
+                                && regex.IsMatch(value);
+                break;
+
+            case "Nullable`1":
+                Type? type = SelectedPropertyInfo?.PropertyType.GetGenericArguments()
+                    .FirstOrDefault();
+
+                object? parsed = null;
+
+                switch (type?.Name)
+                {
+                    case nameof(Decimal):
+                        if (decimal.TryParse(pattern, out decimal d))
+                        {
+                            parsed = Math.Abs(d);
+
+
+                            filter = trx => SelectedPropertyInfo?.GetValue(trx) is decimal value
+                                            && value.Equals(parsed);
+                        }
+
+                        break;
+
+                    case nameof(DateOnly):
+                        if (DateOnly.TryParse(pattern, out DateOnly da))
+                        {
+                            parsed = da;
+
+
+                            filter = trx => SelectedPropertyInfo?.GetValue(trx) is DateOnly value
+                                            && value.Equals(parsed);
+
+                            break;
+                        }
+
+                        if (int.TryParse(pattern, out int i))
+                        {
+                            parsed = i;
+
+
+                            filter = trx => SelectedPropertyInfo?.GetValue(trx) is DateOnly value &&
+                                            value.Year.Equals(parsed);
+
+                            break;
+                        }
+
+                        break;
+
+                }
+                break;
+
+            case "DateOnly":
+                if (!DateOnly.TryParse(pattern, out var date))
+                {
+                    return;
+                }
+
+                filter = trx=>
+                {
+                    if (SelectedPropertyInfo.GetValue(trx) is not DateOnly value)
+                    {
+                        return false;
+
+                    }
+
+                    return value == date;
+                };
+
+                break;
+        }
+
+        var filtered = Unmodified.Where(filter);
+
+        Source.Clear();
+        Source.AddRange(filtered);
     }
 }

@@ -83,8 +83,8 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
 
             OnCollectionChanged(
                 NotifyCollectionChangedAction.Replace,
-                new[] { value },
-                new[] { oldValue });
+                new[] { value,},
+                new[] { oldValue,});
         }
     }
 
@@ -104,7 +104,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
 
         OnCollectionChanged(
             NotifyCollectionChangedAction.Add,
-            new[] { item },
+            new[] { item,},
             Array.Empty<TValue>(),
             _items.Count-1);
 
@@ -143,7 +143,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
 
         OnCollectionChanged(
             NotifyCollectionChangedAction.Add,
-            new[] { item },
+            new[] { item,},
             Array.Empty<TValue>(),
             index);
     }
@@ -156,7 +156,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
             OnCollectionChanged(
                 NotifyCollectionChangedAction.Remove,
                 Array.Empty<TValue>(),
-                new[] { item },
+                new[] { item,},
                 index
                 );
 
@@ -174,7 +174,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
         OnCollectionChanged(
             NotifyCollectionChangedAction.Remove,
             Array.Empty<TValue>(),
-            new[] { item },
+            new[] { item,},
             index
             );
 

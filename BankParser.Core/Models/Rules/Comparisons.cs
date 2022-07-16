@@ -6,5 +6,5 @@ public enum Comparisons
 {
     IsGreaterThan, IsGreaterThanOrEqualTo,
     IsLessThan, IsLessThanOrEqualTo,
-    IsEqualTo
+    IsEqualTo,
 }

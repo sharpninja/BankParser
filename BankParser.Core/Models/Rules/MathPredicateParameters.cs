@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Reflection;
-using static BankParser.Core.Models.Rules.BankTransactionRuleResolver;
 
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 

@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-using BankParser.Activation;
+﻿using BankParser.Activation;
 using BankParser.Contracts.Services;
 using BankParser.Views;
 

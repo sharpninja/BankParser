@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -46,8 +45,8 @@ public static class BankTransactionRuleResolver
     public static Dictionary<Type, List<Delegate>> PredicateByType
         => _predicatesByType ??= new()
             {
-                { typeof(DateOnly), new () { new RuleHandler<MathPredicateParameters>(MathPredicate) } },
-                { typeof(decimal), new () { new RuleHandler<MathPredicateParameters>(MathPredicate) } },
+                { typeof(DateOnly), new () { new RuleHandler<MathPredicateParameters>(MathPredicate),} },
+                { typeof(decimal), new () { new RuleHandler<MathPredicateParameters>(MathPredicate),} },
                 { typeof(string), new () {
                     new RuleHandler<StringParameters>(PatternPredicate),
                     new RuleHandler<RegexParameters>(RegexPredicate),

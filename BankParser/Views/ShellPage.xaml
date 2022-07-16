@@ -2,39 +2,56 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
-        xmlns:syncfusion="using:Syncfusion.UI.Xaml.Editors" xmlns:views="using:BankParser.Views" Loaded="OnLoaded"
-        Unloaded="OnUnloaded" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" mc:Ignorable="d">
+        xmlns:models="using:BankParser.Core.Models"
+        xmlns:sf="using:Syncfusion.UI.Xaml.Editors"
+        xmlns:views="using:BankParser.Views"
+        xmlns:converters="using:BankParser.Converters"
+        Loaded="OnLoaded" Unloaded="OnUnloaded"
+        Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" mc:Ignorable="d">
+    <Page.Resources>
+        <converters:DoubleToGridLengthConverter x:Key="DoubleToGridLengthConverter"/>
+    </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition
+                    Height="{Binding ElementName=AppBarGrid, Path=ActualHeight, Converter={StaticResource DoubleToGridLengthConverter}}"
+                    x:Name="AppBarRow"/>
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" x:Name="AppTitleBar">
+
+
+        <Grid Grid.Row="0" x:Name="AppTitleBar" ColumnSpacing="4" Background="{ThemeResource AppBarBackgroundThemeBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Image Grid.Column="0" Source="/Assets/WindowIcon.png" HorizontalAlignment="Left" Width="32" Height="32"
-                    Margin="8,0" />
+
+            <Image Grid.Column="0" Source="/Assets/WindowIcon.png" HorizontalAlignment="Left" Width="32" Height="32" Margin="8,0" />
             <TextBlock Grid.Column="1" x:Name="AppTitleBarText" VerticalAlignment="Center" TextWrapping="NoWrap"
-                    Style="{StaticResource CaptionTextBlockStyle}" Margin="4, 0, 0, 0" FontSize="16" />
+                       Style="{StaticResource CaptionTextBlockStyle}" Margin="4, 0, 0, 0" FontSize="16" />
         </Grid>
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <CommandBar>
-                <CommandBar.PrimaryCommands>
-                    <AppBarButton Icon="Undo" Command="{x:Bind ViewModel.MenuUndoCommand}" ToolTipService.ToolTip="Undo" />
-                    <AppBarButton Icon="Redo" Command="{x:Bind ViewModel.MenuRedoCommand}" ToolTipService.ToolTip="Redo"/>
-                </CommandBar.PrimaryCommands>
-                <CommandBar.Content>
+        <AppBar Grid.Row="1"
+                x:Name="AppBar"
+                HorizontalAlignment="Stretch"
+                IsOpen="true" IsSticky="True" Closing="AppBar_OnClosing"
+                Background="{ThemeResource AppBarBackgroundThemeBrush}"
+                BorderBrush="{ThemeResource AppBarBorderThemeBrush}"
+                BorderThickness="{ThemeResource AppBarBottomBorderThemeThickness}">
+            <AppBar.Content>
+                <Grid HorizontalAlignment="Stretch" x:Name="AppBarGrid">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                        <AppBarButton Icon="Undo" Command="{x:Bind ViewModel.MenuUndoCommand}"
+                                ToolTipService.ToolTip="Undo" />
+                        <AppBarButton Icon="Redo" Command="{x:Bind ViewModel.MenuRedoCommand}"
+                                ToolTipService.ToolTip="Redo" />
+                    </StackPanel>
+
                     <MenuBar Grid.Column="0">
                         <MenuBarItem x:Uid="ShellMenuBarItem_File">
                             <MenuFlyoutItem x:Uid="ShellMenuItem_File_Open"
@@ -54,29 +71,50 @@
                             </MenuBarItem.Items>
                         </MenuBarItem>
                     </MenuBar>
-                </CommandBar.Content>
-            </CommandBar>
-        </Grid>
-        <syncfusion:SfSegmentedControl Grid.Row="2" x:Name="segmentedControl" HorizontalAlignment="Center"
-                VerticalAlignment="Center" BorderThickness="3" ItemBorderThickness="0" DisplayMemberPath="Name">
-            <syncfusion:SfSegmentedControl.ItemsSource>
-                <syncfusion:SfComboBox IsEditable="false" ItemsSource="{Binding Columns}" TextMemberPath="Name"
-                        DisplayMemberPath="Name" InputSubmitted="SfComboBox_InputSubmitted">
-                </syncfusion:SfComboBox>
-                <syncfusion:SfAutoComplete TextSearchMode="Contains" x:Name="SearchCriteria">
-                    <syncfusion:SfAutoComplete.FilterBehavior>
-                        <views:CustomAsyncFilter />
-                    </syncfusion:SfAutoComplete.FilterBehavior>
-                </syncfusion:SfAutoComplete>
-                <Button Command="{x:Bind ViewModel.SearchCommand}"
-                        CommandParameter="{Binding ElementName=SearchCriteria}">
-                    <FontIcon Glyph="&#xE721;" />
-                </Button>
-            </syncfusion:SfSegmentedControl.ItemsSource>
-        </syncfusion:SfSegmentedControl>
+                    <Border Grid.Column="1" HorizontalAlignment="Stretch" Background="Transparent"
+                            BorderBrush="{ThemeResource AppBarBorderThemeBrush}"
+                            BorderThickness="{ThemeResource AppBarBottomBorderThemeThickness}">
+                        <Grid ColumnSpacing="4" DataContext="{x:Bind ViewModel.MainViewModel}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <sf:SfComboBox IsEditable="false"
+                                           Grid.Column="0"
+                                           VerticalAlignment="Center"
+                                           SelectedValue="{Binding SelectedProperty, Mode=TwoWay}"
+                                    >
+                                <sf:SfComboBox.Items>
+                                    <sf:SfComboBoxItem IsSelected="True">Other</sf:SfComboBoxItem>
+                                    <sf:SfComboBoxItem>Memo</sf:SfComboBoxItem>
+                                    <sf:SfComboBoxItem>Desc</sf:SfComboBoxItem>
+                                    <sf:SfComboBoxItem>Deposit</sf:SfComboBoxItem>
+                                    <sf:SfComboBoxItem>Withdrawal</sf:SfComboBoxItem>
+                                    <sf:SfComboBoxItem>Date</sf:SfComboBoxItem>
+                                </sf:SfComboBox.Items>
+                            </sf:SfComboBox>
+                            <sf:SfAutoComplete Grid.Column="1"
+                                               TextSearchMode="Contains"
+                                               x:Name="SearchCriteria"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Stretch">
+                                <sf:SfAutoComplete.FilterBehavior>
+                                    <views:CustomAsyncFilter />
+                                </sf:SfAutoComplete.FilterBehavior>
+                            </sf:SfAutoComplete>
+                            <Button Grid.Column="2"
+                                    Command="{Binding SearchCommand}"
+                                    CommandParameter="{Binding ElementName=SearchCriteria, Mode=TwoWay}"
+                                    VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE721;" />
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </AppBar.Content>
+        </AppBar>
 
-        <Grid Grid.Row="3" Margin="{StaticResource MenuBarContentMargin}">
-            <Frame x:Name="NavigationFrame" />
-        </Grid>
+        <Frame Grid.Row="2" x:Name="NavigationFrame" />
     </Grid>
 </Page>

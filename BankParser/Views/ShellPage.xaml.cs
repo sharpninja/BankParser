@@ -7,8 +7,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 
-using Syncfusion.UI.Xaml.Editors;
-
 using Windows.System;
 
 namespace BankParser.Views;
@@ -54,7 +52,7 @@ public sealed partial class ShellPage : Page
 
     private static KeyboardAccelerator BuildKeyboardAccelerator(VirtualKey key, VirtualKeyModifiers? modifiers = null)
     {
-        KeyboardAccelerator keyboardAccelerator = new KeyboardAccelerator() { Key = key };
+        KeyboardAccelerator keyboardAccelerator = new KeyboardAccelerator() { Key = key,};
 
         if (modifiers.HasValue)
         {
@@ -75,17 +73,20 @@ public sealed partial class ShellPage : Page
         args.Handled = result;
     }
 
-    private void SfComboBox_InputSubmitted(object sender, ComboBoxInputSubmittedEventArgs e)
+    private void AppBar_OnClosing(object? sender, object e)
     {
+        if (e is not RoutedEventArgs
+            {
+                OriginalSource: AppBar appBar,
+            })
+        {
+            return;
+        }
+
+        appBar.IsOpen = true;
+        //AppBarRow.MinHeight = AppBarGrid.ActualSize.Y;
+        //AppBarRow.MaxHeight = AppBarGrid.ActualSize.Y;
+        //AppBarRow.Height = new(AppBarGrid.ActualSize.Y);
 
     }
-}
-
-public class CustomAsyncFilter : IAutoCompleteFilterBehavior
-{
-    public Task<object> GetMatchingItemsAsync(SfAutoComplete source, AutoCompleteFilterInfo filterInfo)
-        => Task.FromResult(source.TextSearchMode switch
-        {
-            _ => (object)Array.Empty<string>()
-        });
 }

@@ -12,8 +12,8 @@ internal static class Converter
         DateParseHandling = DateParseHandling.None,
         Converters =
         {
-            new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal },
-            new ParseStringConverter()
-        }
+            new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal,},
+            new ParseStringConverter(),
+        },
     };
 }

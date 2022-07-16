@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace BankParser.Activation;
+﻿namespace BankParser.Activation;
 
 public interface IActivationHandler
 {

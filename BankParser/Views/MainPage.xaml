@@ -26,10 +26,14 @@
         <treeGrid:SfTreeGrid Grid.Column="0" Grid.Row="0" x:Name="Tree" AutoGenerateColumns="False"
                 GridLinesVisibility="Horizontal" Loaded="SfDataGrid_Loaded" AllowSorting="True"
                 AllowResizingColumns="True" AllowEditing="False" AllowFiltering="True" ColumnWidthMode="Star"
-                DataContext="{Binding ElementName=Main, Path=ViewModel}" SelectedItem="{Binding Selected, Mode=TwoWay}"
-                ItemsSource="{Binding GroupedByDate, Mode=OneWay}" AutoExpandMode="AllNodesExpanded"
-                             NodeExpanded="Tree_NodeExpanded"
-                ChildPropertyName="Children" SelectionMode="Single" ItemsSourceChanged="Tree_ItemsSourceChanged">
+                DataContext="{Binding ElementName=Main, Path=ViewModel}"
+                SelectedItem="{Binding Selected, Mode=TwoWay}"
+                ItemsSource="{Binding GroupedByDate, Mode=OneWay}"
+                AutoExpandMode="AllNodesExpanded"
+                NodeExpanded="Tree_NodeExpanded"
+                ChildPropertyName="Children"
+                SelectionMode="Single"
+                ItemsSourceChanged="Tree_ItemsSourceChanged">
             <treeGrid:SfTreeGrid.Columns>
                 <treeGrid:TreeGridDateColumn MappingName="Date" AllowFiltering="True" AllowSorting="True"
                         ColumnWidthMode="Auto" />

@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using BankParser.Core.Models.Converters;
 using ChoETL;
@@ -17,7 +15,7 @@ public partial class BankTransaction
     private string? _type;
     private string? _otherParty;
 
-    [JsonProperty("Date"), JsonConverter(typeof(DateOnlyConverter))]
+    [JsonProperty("Date"), JsonConverter(typeof(DateOnlyConverter)), ]
     public DateOnly? Date
     {
         get;
@@ -184,7 +182,7 @@ public partial class BankTransaction
             ("transfer", "fee") => "Fee: Transfer",
             (_, "fee") => $"Fee: {Description}",
             ("transaction", "comment") => "Comment",
-            _ => $"UNKOWN: [{Description}]"
+            _ => $"UNKOWN: [{Description}]",
         };
     }
 
@@ -291,17 +289,17 @@ public partial class BankTransaction
 
                 if (parsedOtherParty.Length > 0)
                 {
-                    otherParty = otherParty with { Name = parsedOtherParty[0] };
+                    otherParty = otherParty with { Name = parsedOtherParty[0],};
                 }
 
                 if (parsedOtherParty.Length > 1)
                 {
-                    otherParty = otherParty with { Address = parsedOtherParty[1] };
+                    otherParty = otherParty with { Address = parsedOtherParty[1],};
                 }
 
                 if (parsedOtherParty.Length > 2)
                 {
-                    otherParty = otherParty with { Phone = parsedOtherParty[2] };
+                    otherParty = otherParty with { Phone = parsedOtherParty[2],};
                 }
 
                 if (parsedOtherParty.Length > 3)
@@ -310,7 +308,7 @@ public partial class BankTransaction
                     {
                         Date = DateTimeOffset.TryParse(
                             parsedOtherParty[3],
-                            out DateTimeOffset value) ? value : default
+                            out DateTimeOffset value) ? value : default,
                     };
                 }
 
@@ -461,23 +459,54 @@ public partial class BankTransaction
                 pattern,
                 RegexOptions.IgnoreCase |
                 RegexOptions.Singleline));
+
+    public override string ToString()
+        => OtherParty;
 }
 
 public partial class BankTransaction
 {
+    private static List<PropertyInfo>? _columns = null;
+
+    public static List<PropertyInfo> Columns => _columns
+        ??= typeof(BankTransaction)
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .ToList();
+
     public static BankTransaction[]? FromJson(string json)
         => JsonConvert.DeserializeObject<BankTransaction[]>(json, Converter.Settings);
 
     public static IEnumerable<BankTransaction> FromCsv(string fileName)
     {
-        decimal? ReturnNullDecimal() => null;
-        decimal? ParseDecimal(string item)
+        static decimal? ReturnNullDecimal() => null;
+
+        static decimal? ParseDecimal(string item)
             => decimal.TryParse(item, out decimal data)
                             ? data
                             : ReturnNullDecimal();
 
         //var stream = File.OpenText(fileName);
-        string[] lines = File.ReadAllLines(fileName);
+        var lines = File.ReadAllLines(fileName).ToList();
+
+        int headerRow = 0;
+        for (int i=0; i < lines.Count; i++)
+        {
+            string line = lines[i];
+            string trimmed = line.Trim('\"');
+
+            if (!trimmed.StartsWith("Transaction", StringComparison.InvariantCultureIgnoreCase))
+            {
+                continue;
+            }
+
+            headerRow = i - 1;
+            break;
+        }
+
+        for (int i = headerRow; i >= 0; --i)
+        {
+            lines.RemoveAt(i);
+        }
 
         ChoCSVLiteReader reader = new ();
         IEnumerable<string[]> rows = reader.ReadLines(lines);
@@ -492,6 +521,7 @@ public partial class BankTransaction
             List<string> quotedSections = new();
             bool isHeaderRow = !fieldNames.Any();
             Queue<string> fields = new(fieldNames);
+
             for (int i = 0; i < values.Length; i++)
             {
                 if (isHeaderRow)
@@ -534,19 +564,21 @@ public partial class BankTransaction
                 }
             }
 
-            if (data.Count > 0)
+            if (data.Count <= 0)
             {
-                transaction.TransactionNumber = data.TryGetValue("Transaction Number", out string? tr) ? tr : null;
-                transaction.Description = data.TryGetValue("Description", out string? desc) ? desc : null;
-                transaction.Memo = data.TryGetValue(nameof(BankTransaction.Memo), out string? memo) ? memo : null;
-                transaction.Date = data.TryGetValue("Date", out string? date) ? DateOnly.Parse(date!) : null;
-                transaction.AmountCredit = data.TryGetValue("Amount Credit", out string? credit) ? ParseDecimal(credit!) : null;
-                transaction.AmountDebit = data.TryGetValue("Amount Debit", out string? debit) ? ParseDecimal(debit!) : null;
-
-                yield return transaction;
-
-                data.Clear();
+                continue;
             }
+
+            transaction.TransactionNumber = data.TryGetValue("Transaction Number", out string? tr) ? tr : null;
+            transaction.Description = data.TryGetValue("Description", out string? desc) ? desc : null;
+            transaction.Memo = data.TryGetValue(nameof(BankTransaction.Memo), out string? memo) ? memo : null;
+            transaction.Date = data.TryGetValue("Date", out string? date) ? DateOnly.Parse(date!) : null;
+            transaction.AmountCredit = data.TryGetValue("Amount Credit", out string? credit) ? ParseDecimal(credit!) : null;
+            transaction.AmountDebit = data.TryGetValue("Amount Debit", out string? debit) ? ParseDecimal(debit!) : null;
+
+            yield return transaction;
+
+            data.Clear();
         }
 
     }

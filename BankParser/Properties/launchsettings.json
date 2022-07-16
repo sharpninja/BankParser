@@ -1,7 +1,8 @@
 {
   "profiles": {
     "BankParser (Package)": {
-      "commandName": "MsixPackage"
+      "commandName": "MsixPackage",
+      "nativeDebugging": true
     },
     "BankParser (Unpackaged)": {
       "commandName": "Project"

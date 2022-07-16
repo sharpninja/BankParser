@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Threading.Tasks;
-using Windows.ApplicationModel.Activation;
+
 using BankParser.Contracts.Services;
 using BankParser.ViewModels;
 
-using Microsoft.UI.Xaml;
 using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
 
 namespace BankParser.Activation;
