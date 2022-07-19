@@ -86,7 +86,8 @@
                                            SelectedValue="{Binding SelectedProperty, Mode=TwoWay}"
                                     >
                                 <sf:SfComboBox.Items>
-                                    <sf:SfComboBoxItem IsSelected="True">Other</sf:SfComboBoxItem>
+                                    <sf:SfComboBoxItem IsSelected="True">All</sf:SfComboBoxItem>
+                                    <sf:SfComboBoxItem>Other</sf:SfComboBoxItem>
                                     <sf:SfComboBoxItem>Memo</sf:SfComboBoxItem>
                                     <sf:SfComboBoxItem>Desc</sf:SfComboBoxItem>
                                     <sf:SfComboBoxItem>Deposit</sf:SfComboBoxItem>

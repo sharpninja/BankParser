@@ -14,7 +14,7 @@ namespace BankParser.ViewModels;
 
 public partial class ShellViewModel : ObservableRecipient
 {
-    private bool _isBackEnabled = false;
+    private bool _isBackEnabled;
     private object? _selected;
     private ICommand? _menuFileExitCommand;
     private ICommand? _menuViewsMainCommand;

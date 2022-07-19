@@ -36,7 +36,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
                         newValues,
                         oldValues));
                 break;
-            case NotifyCollectionChangedAction.Add when (newValues.Count() > 1):
+            case NotifyCollectionChangedAction.Add when newValues.Count() > 1:
 
                 _collectionChanged?.Invoke(
                     this,
@@ -45,7 +45,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
                         newValues.ToList(),
                         index));
                 break;
-            case NotifyCollectionChangedAction.Add when (newValues.Count() > 0):
+            case NotifyCollectionChangedAction.Add when newValues.Count() > 0:
 
                 _collectionChanged?.Invoke(
                     this,

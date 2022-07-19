@@ -95,4 +95,7 @@ public sealed partial class MainPage
         }
         Tree.ColumnSizer.Refresh();
     }
+
+    private void Notes_OnLoaded(object sender, RoutedEventArgs e)
+        => ViewModel.Document = Notes.Document;
 }

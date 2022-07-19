@@ -78,7 +78,7 @@ public static class SettingsStorageExtensions
     {
         IStorageItem item = await folder.TryGetItemAsync(fileName).AsTask().ConfigureAwait(false);
 
-        if ((item?.IsOfType(StorageItemTypes.File) == false))
+        if (item?.IsOfType(StorageItemTypes.File) == false)
         {
             StorageFile storageFile = await folder.GetFileAsync(fileName);
             byte[]? content = await storageFile.ReadBytesAsync();

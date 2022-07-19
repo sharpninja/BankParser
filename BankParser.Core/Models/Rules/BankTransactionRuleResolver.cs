@@ -9,15 +9,15 @@ namespace BankParser.Core.Models.Rules;
 public record struct BankTransactionRuleResolver<TDelegate>(TDelegate Predicate)
     where TDelegate : Delegate
 {
-    public bool IsMatch(BankTransaction trx)
+    public bool IsMatch(BankTransactionView trx)
         => (bool?)Predicate.DynamicInvoke(trx) ?? false;
 }
 
 public static class BankTransactionRuleResolver
 {
-    private static PropertyInfo? memoProperty => typeof(BankTransaction).GetProperty(nameof(BankTransaction.Memo));
-    private static PropertyInfo? descProperty => typeof(BankTransaction).GetProperty(nameof(BankTransaction.Description));
-    private static PropertyInfo? otherProperty => typeof(BankTransaction).GetProperty(nameof(BankTransaction.OtherParty));
+    private static PropertyInfo? memoProperty => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.Memo));
+    private static PropertyInfo? descProperty => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.Description));
+    private static PropertyInfo? otherProperty => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.OtherParty));
 
     public static Delegate GetMathHandler(Comparisons comparison)
         => (MathHandler)(comparison switch
@@ -69,19 +69,19 @@ public static class BankTransactionRuleResolver
         => (parms) => parms is TransactionPropertyRegexParameters p
         && p.regex.IsMatch(p.pi?.GetValue(p.trx)?.ToString() ?? "");
 
-    private static bool IsGreaterThan(BankTransaction trx, PropertyInfo pi, IComparable value)
+    private static bool IsGreaterThan(BankTransactionView trx, PropertyInfo pi, IComparable value)
         => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) > 0;
 
-    private static bool IsGreaterThanOrEqualTo(BankTransaction trx, PropertyInfo pi, IComparable value)
+    private static bool IsGreaterThanOrEqualTo(BankTransactionView trx, PropertyInfo pi, IComparable value)
             => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) >= 0;
 
-    private static bool IsLessThan(BankTransaction trx, PropertyInfo pi, IComparable value)
+    private static bool IsLessThan(BankTransactionView trx, PropertyInfo pi, IComparable value)
             => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) < 0;
 
-    private static bool IsLessThanOrEqualTo(BankTransaction trx, PropertyInfo pi, IComparable value)
+    private static bool IsLessThanOrEqualTo(BankTransactionView trx, PropertyInfo pi, IComparable value)
             => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) <= 0;
 
-    private static bool IsEqualTo(BankTransaction trx, PropertyInfo pi, IComparable value)
+    private static bool IsEqualTo(BankTransactionView trx, PropertyInfo pi, IComparable value)
             => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) == 0;
 
     public static Delegate GetPredicate(RuleTypes ruleType)
@@ -152,8 +152,8 @@ public delegate Delegate PatternHandler<TParameters>(TParameters parms) where TP
 public delegate Delegate PropertyPatternHandler<TParameters>(PropertyInfo pi, TParameters parms) where TParameters : IParameters;
 public delegate Delegate PropertyRegexHandler(PropertyInfo pi, Regex regex);
 public delegate Delegate MathRuleHandler(PropertyInfo pi, IComparable value, CalculationHandler calculation);
-public delegate bool CalculationHandler(BankTransaction trx, PropertyInfo pi, IComparable value);
-public delegate bool ByPatternHandler(BankTransaction trx, PropertyInfo pi, IParameters parms);
-public delegate bool ByRegexHandler(BankTransaction trx, PropertyInfo pi, Regex regex);
-public delegate bool MathHandler(BankTransaction trx, PropertyInfo pi, IComparable value);
+public delegate bool CalculationHandler(BankTransactionView trx, PropertyInfo pi, IComparable value);
+public delegate bool ByPatternHandler(BankTransactionView trx, PropertyInfo pi, IParameters parms);
+public delegate bool ByRegexHandler(BankTransactionView trx, PropertyInfo pi, Regex regex);
+public delegate bool MathHandler(BankTransactionView trx, PropertyInfo pi, IComparable value);
 public delegate bool CommonDelegate(IParameters parms);

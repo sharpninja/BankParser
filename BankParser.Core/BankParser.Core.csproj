@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="ChoETL.JSON.NETStandard" Version="1.2.1.48" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0-preview4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Collections.Concurrent" Version="4.3.0" />
   </ItemGroup>

@@ -5,14 +5,14 @@
 namespace BankParser.Core.Models.Rules;
 
 public record TransactionPropertyStringParameters(
-    BankTransaction trx,
+    BankTransactionView trx,
     PropertyInfo? pi,
     string pattern) : IParameters
 {
 }
 
 public record TransactionStringParameters(
-    BankTransaction trx,
+    BankTransactionView trx,
     string pattern) : IParameters
 {
 }

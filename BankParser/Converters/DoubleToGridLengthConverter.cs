@@ -15,13 +15,13 @@ public class DoubleToGridLengthConverter : IValueConverter
         if (value is double d &&
             (targetType == typeof(GridLength)))
         {
-            return (d switch
+            return d switch
             {
                 0 => new GridLength(64),
                 double.PositiveInfinity => GridLength.Auto,
                 double.NaN => new GridLength(64),
                 _ => new GridLength(d),
-            });
+            };
         }
 
         return GridLength.Auto;
@@ -33,11 +33,11 @@ public class DoubleToGridLengthConverter : IValueConverter
         object parameter,
         string language
     )
-        => (value is GridLength g && targetType == typeof(double))
+        => value is GridLength g && (targetType == typeof(double))
             ? g.IsAbsolute
                 ? g.Value
-                : (g.IsStar
+                : g.IsStar
                     ? double.PositiveInfinity
-                    : 64)
+                    : 64
             : double.NaN;
 }

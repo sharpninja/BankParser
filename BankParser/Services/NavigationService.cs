@@ -24,7 +24,7 @@ public class NavigationService : INavigationService
         {
             if (_frame == null)
             {
-                _frame = (App.MainWindow.Content is Frame f) ? f : null;
+                _frame = App.MainWindow.Content is Frame f ? f : null;
                 RegisterFrameEvents();
             }
 
@@ -87,8 +87,8 @@ public class NavigationService : INavigationService
             return false;
         }
 
-        if (_frame is not null &&
-            _frame.Content?.GetType() != pageType ||
+        if ((_frame is not null &&
+             (_frame.Content?.GetType() != pageType)) ||
             (parameter?.Equals(_lastParameterUsed) == false))
         {
             _frame!.Tag = clearNavigation;

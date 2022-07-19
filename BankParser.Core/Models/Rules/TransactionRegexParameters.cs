@@ -6,13 +6,13 @@ using System.Text.RegularExpressions;
 namespace BankParser.Core.Models.Rules;
 
 public record TransactionPropertyRegexParameters(
-    BankTransaction trx,
+    BankTransactionView trx,
     PropertyInfo? pi,
     Regex regex) : IParameters
 {
 }
 public record TransactionRegexParameters(
-    BankTransaction trx,
+    BankTransactionView trx,
     Regex regex) : IParameters
 {
 }

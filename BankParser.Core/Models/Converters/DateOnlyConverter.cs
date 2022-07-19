@@ -8,7 +8,7 @@ namespace BankParser.Core.Models.Converters;
 public class DateOnlyConverter : JsonConverter
 {
     public override bool CanConvert(Type objectType)
-        => objectType == typeof(DateTimeOffset) || objectType == typeof(DateTime);
+        => (objectType == typeof(DateTimeOffset)) || (objectType == typeof(DateTime));
     public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
     {
         var deserialized = serializer.Deserialize<DateTimeOffset>(reader);

@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 namespace BankParser.Core.Models;
 
 public record struct BankTransactionMetadata(
-    BankTransaction Transaction,
+    BankTransactionView Transaction,
     ConcurrentDictionary<string, object> Properties,
     ConcurrentDictionary<string, Delegate> Rules
     )

@@ -9,14 +9,14 @@ namespace BankParser.Core.Models.Rules;
 public record struct BankTransactionRule<TDelegate>(
     string RuleName,
     BankTransactionRuleResolver<TDelegate> SelectionResolver,
-    Action<BankTransaction> Action
+    Action<BankTransactionView> Action
 ) : IRule
     where TDelegate : Delegate
 {
-    private bool InvokeResolver(BankTransaction trx)
+    private bool InvokeResolver(BankTransactionView trx)
         => (bool?)SelectionResolver.Predicate.DynamicInvoke(trx) ?? false;
 
-    public void ApplyRule(IEnumerable<BankTransaction> transactions)
+    public void ApplyRule(IEnumerable<BankTransactionView> transactions)
     {
         foreach (var trx in transactions
             .Where(InvokeResolver))
@@ -50,6 +50,6 @@ public record struct BankTransactionRule
         => AvailableRules.TryGetValue(ruleType, out var del)
             ? del : default;
 
-    public static BankTransactionRule<Delegate> GetRule(RuleTypes ruleType, Action<BankTransaction> action)
+    public static BankTransactionRule<Delegate> GetRule(RuleTypes ruleType, Action<BankTransactionView> action)
         => new(ruleType.ToString(), GetDelegate(ruleType), action);
 }
