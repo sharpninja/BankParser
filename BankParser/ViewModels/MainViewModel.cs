@@ -1,30 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Reflection;
-using System.Text.RegularExpressions;
-
-using Windows.ApplicationModel.DataTransfer;
-using Windows.Storage.Pickers;
-
-using BankParser.Contracts.ViewModels;
-using BankParser.Core.Contracts.Services;
-using BankParser.Core.Models;
-
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-
-using Microsoft.UI.Text;
-using Microsoft.UI.Xaml;
-
-using Newtonsoft.Json;
-
-using WinRT.Interop;
-
-using Syncfusion.UI.Xaml.Editors;
-// ReSharper disable JoinDeclarationAndInitializer
+﻿// ReSharper disable JoinDeclarationAndInitializer
 
 // ReSharper disable SuggestVarOrType_Elsewhere
 // ReSharper disable SuggestVarOrType_SimpleTypes
@@ -221,7 +195,7 @@ public partial class MainViewModel : ObservableObject, INavigationAware
 
             void Callback()
             {
-                var filtered =
+                List<BankTransactionView> filtered =
                     visibleItems.OrderByDescending(
                         static i => i.Date)
                         .ToList();
@@ -253,32 +227,6 @@ public partial class MainViewModel : ObservableObject, INavigationAware
     {
     }
 
-    [RelayCommand]
-    private void AddFilter()
-    {
-        if (FilterText is null or "")
-        {
-            return;
-        }
-
-        string filterText = FilterText.Trim();
-        FilterText = null;
-        AddUndo();
-        FilterText = filterText;
-
-        _base.CurrentFilter = FilterText;
-
-        if (_base.CurrentFilter is null)
-        {
-            return;
-        }
-
-        FilterExpression = new Regex(Regex.Escape(_base.CurrentFilter),
-            RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        ApplyFilter();
-    }
-
     internal void ClearFilter()
     {
         _base.CurrentFilter = null;
@@ -307,13 +255,13 @@ public partial class MainViewModel : ObservableObject, INavigationAware
         {
             FileOpenPicker fileOpenPicker = new();
 
-            var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+            IntPtr hwnd = WindowNative.GetWindowHandle(App.MainWindow);
             InitializeWithWindow.Initialize(fileOpenPicker, hwnd);
 
             fileOpenPicker.ViewMode = PickerViewMode.List;
             fileOpenPicker.SuggestedStartLocation = PickerLocationId.Downloads;
             fileOpenPicker.FileTypeFilter.Add(".csv");
-            var result = await fileOpenPicker.PickSingleFileAsync();
+            StorageFile? result = await fileOpenPicker.PickSingleFileAsync();
 
             LoadData(
                 result is not null
@@ -518,134 +466,6 @@ public partial class MainViewModel : ObservableObject, INavigationAware
         AddUndo();
     }
 
-    [RelayCommand]
-    public void Copy(object? text)
-    {
-        var request = new DataPackage
-        {
-            RequestedOperation = DataPackageOperation.Copy,
-        };
-
-        request.SetText(text?.ToString());
-
-        Clipboard.SetContent(request);
-    }
-
-    [RelayCommand]
-    public async Task Search(SfAutoComplete autoComplete)
-    {
-        string pattern = autoComplete.Text;
-        Regex regex = new(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-
-        Dictionary<PropertyInfo, Predicate<BankTransactionView>> map = new();
-
-        foreach (var pi in SelectedPropertyInfo)
-        {
-            switch (pi.Name)
-            {
-                case nameof(BankTransactionView.AmountCredit):
-                case nameof(BankTransactionView.AmountDebit):
-                    if (decimal.TryParse(pattern, out decimal d))
-                    {
-                        decimal parsed = Math.Abs(d);
-
-                        bool FilterMoney(BankTransactionView trx)
-                        {
-                            bool isMatch
-                                = pi.GetValue(trx) is decimal value && value.Equals(parsed);
-
-                            return isMatch;
-                        }
-
-                        map.Add(pi,
-                            FilterMoney
-                        );
-                    }
-
-                    break;
-
-
-                case nameof(BankTransactionView.Date):
-                    if (DateOnly.TryParse(pattern, out DateOnly da))
-                    {
-                        var parsed = da;
-
-                        bool FilterDateByDate(BankTransactionView trx)
-                        {
-                            bool isMatch = pi.GetValue(trx) is DateOnly value &&
-                                           value.Equals(parsed);
-
-                            return isMatch;
-                        }
-
-                        map.Add(
-                            pi,
-                            FilterDateByDate
-                        );
-
-                        break;
-                    }
-
-                    if (int.TryParse(pattern, out int i))
-                    {
-                        int parsed = i;
-
-                        bool FilterDateByYear(BankTransactionView trx)
-                        {
-
-                            bool isMatch = pi.GetValue(trx) is DateOnly value &&
-                                           value.Year.Equals(parsed);
-
-                            return isMatch;
-                        }
-
-                        map.Add(pi, FilterDateByYear);
-                    }
-
-                    break;
-
-                default:
-
-                    bool FilterString(BankTransactionView trx)
-                    {
-                        if (pi.GetValue(trx) is not string toMatch)
-                        {
-                            return false;
-                        }
-
-                        bool isMatch = regex.IsMatch(toMatch);
-
-                        return isMatch;
-                    }
-
-                    map.Add(pi,
-                        FilterString
-                    );
-
-                    break;
-            }
-        }
-
-        FilteredBag.Clear();
-
-        List<BankTransactionFilters> toFilter;
-
-        toFilter = Unmodified
-            .Select(trx => new BankTransactionFilters(trx, map))
-            .ToList();
-
-        await Parallel.ForEachAsync(
-            toFilter,
-            ProcessFilter);
-
-        Source.Clear();
-        Source.AddRange(
-            FilteredBag
-                .OrderByDescending(static trx => trx.Date)
-                .ThenBy(static trx => trx.TransactionNumber)
-                .Distinct());
-    }
-
     private ConcurrentBag<BankTransactionView> FilteredBag
     {
         get;
@@ -661,9 +481,9 @@ public partial class MainViewModel : ObservableObject, INavigationAware
             return ValueTask.FromCanceled(token);
         }
 
-        (var trx, var predicates) = g;
+        (BankTransactionView trx, Dictionary<PropertyInfo, Predicate<BankTransactionView>> predicates) = g;
 
-        foreach (var predicate in predicates.Values)
+        foreach (Predicate<BankTransactionView> predicate in predicates.Values)
         {
             if (token.IsCancellationRequested)
             {
@@ -685,3 +505,4 @@ public partial class MainViewModel : ObservableObject, INavigationAware
 
     public bool SelectedTransactionIsNotNull => SelectedTransaction is not null;
 }
+

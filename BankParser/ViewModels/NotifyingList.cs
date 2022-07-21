@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Specialized;
-
-namespace BankParser.ViewModels;
+﻿namespace BankParser.ViewModels;
 
 public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IEnumerable
 {
@@ -77,7 +73,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
                 return;
             }
 
-            var oldValue = _items[index];
+            TValue oldValue = _items[index];
 
             _items[index] = value;
 
@@ -91,7 +87,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
     public int Count => _items.Count;
     public bool IsReadOnly => false;
 
-    private event NotifyCollectionChangedEventHandler? _collectionChanged;
+    private event NotifyCollectionChangedEventHandler? CollectionChanged;
     public event NotifyCollectionChangedEventHandler? CollectionChanged
     {
         add => _collectionChanged += value;
@@ -124,7 +120,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
 
     public void Clear()
     {
-        var oldValues = _items.ToArray();
+        TValue[] oldValues = _items.ToArray();
         _items.Clear();
 
         OnCollectionChanged(
@@ -168,7 +164,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
 
     public void RemoveAt(int index)
     {
-        var item = _items[index];
+        TValue item = _items[index];
         _items.RemoveAt(index);
 
         OnCollectionChanged(

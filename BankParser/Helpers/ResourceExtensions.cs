@@ -1,6 +1,4 @@
-﻿using Microsoft.Windows.ApplicationModel.Resources;
-
-namespace BankParser.Helpers;
+﻿namespace BankParser.Helpers;
 
 internal static class ResourceExtensions
 {

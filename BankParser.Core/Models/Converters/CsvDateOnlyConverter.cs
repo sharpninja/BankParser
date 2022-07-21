@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Globalization;
-
-using ChoETL;
 
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 
 namespace BankParser.Core.Models.Converters;
+
+using System.Globalization;
+
+using ChoETL;
 
 public class CsvDateOnlyConverter : IChoConvertible
 {

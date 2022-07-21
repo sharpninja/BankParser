@@ -1,17 +1,10 @@
-﻿using System;
-
-using BankParser.Core.Helpers;
-
-using Windows.Storage;
-using Windows.Storage.Streams;
-
-namespace BankParser.Helpers;
+﻿namespace BankParser.Helpers;
 
 // Use these extension methods to store and retrieve local and roaming app data
 // More details regarding storing and retrieving app data at https://docs.microsoft.com/windows/uwp/app-settings/store-and-retrieve-app-data
 public static class SettingsStorageExtensions
 {
-    private const string FileExtension = ".json";
+    private const string FILE_EXTENSION = ".json";
 
     public static bool IsRoamingStorageAvailable(this ApplicationData appData) => appData.RoamingStorageQuota == 0;
 
@@ -103,5 +96,5 @@ public static class SettingsStorageExtensions
         return null;
     }
 
-    private static string GetFileName(string name) => string.Concat(name, FileExtension);
+    private static string GetFileName(string name) => string.Concat(name, SettingsStorageExtensions.FILE_EXTENSION);
 }

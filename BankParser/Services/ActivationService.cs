@@ -1,11 +1,4 @@
-﻿using BankParser.Activation;
-using BankParser.Contracts.Services;
-using BankParser.Views;
-
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-
-namespace BankParser.Services;
+﻿namespace BankParser.Services;
 
 public class ActivationService : IActivationService
 {

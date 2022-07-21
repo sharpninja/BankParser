@@ -1,20 +1,16 @@
-﻿using BankParser.Core.Contracts.Services;
-using BankParser.Core.Models;
-using BankParser.Core.Models.Converters;
+﻿namespace BankParser.Core.Services;
 
 using ChoETL;
 
-using Newtonsoft.Json;
-
-namespace BankParser.Core.Services;
+using Models.Converters;
 
 public class TransactionService : ITransactionService
 {
     private List<ImmutableBankTransaction>? _immutable;
     public const string DEFAULT_FILENAME = @"C:\Users\kingd\OneDrive\Desktop\transactions.json";
 
-    public IEnumerable<ImmutableBankTransaction> FromJson(string json)
-        => JsonConvert.DeserializeObject<ImmutableBankTransaction[]>(json, Converter.Settings);
+    public IEnumerable<ImmutableBankTransaction>? FromJson(string json)
+        => JsonConvert.DeserializeObject<ImmutableBankTransaction[]>(json, Converter._settings);
 
     [ JsonIgnore ]
     private List<ImmutableBankTransaction> Immutable
@@ -42,7 +38,7 @@ public class TransactionService : ITransactionService
         }
         else if (fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
         {
-            data = FromCsv(fileName).ToList();
+            data = FromCsv(fileName)?.ToList() ?? new();
         }
 
         Immutable = data;
@@ -59,7 +55,7 @@ public class TransactionService : ITransactionService
         set;
     } = null!;
 
-    public IEnumerable<ImmutableBankTransaction> FromCsv(string fileName)
+    public IEnumerable<ImmutableBankTransaction>? FromCsv(string fileName)
     {
         static decimal? ReturnNullDecimal() => null;
 
@@ -69,7 +65,7 @@ public class TransactionService : ITransactionService
                 : ReturnNullDecimal();
 
         //var stream = File.OpenText(fileName);
-        var lines = File.ReadAllLines(fileName).ToList();
+        List<string> lines = File.ReadAllLines(fileName).ToList();
 
         int headerRow = 0;
         for (int i = 0; i < lines.Count; i++)
@@ -112,7 +108,7 @@ public class TransactionService : ITransactionService
                 }
                 else
                 {
-                    string value = values[i]?.Trim();
+                    string value = values[i].Trim();
                     if (currentField is not null)
                     {
                         currentField = fields.Dequeue();

@@ -1,13 +1,4 @@
-﻿using System.Collections.Specialized;
-using System.ComponentModel;
-
-using BankParser.ViewModels;
-
-using Microsoft.UI.Xaml;
-
-using Syncfusion.UI.Xaml.TreeGrid;
-
-namespace BankParser.Views;
+﻿namespace BankParser.Views;
 
 // TODO: Change the grid as appropriate for your app. Adjust the column definitions on DataGridPage.xaml.
 // For more details, see the documentation at https://docs.microsoft.com/windows/communitytoolkit/controls/datagrid.
@@ -27,7 +18,7 @@ public sealed partial class MainPage
         InitializeComponent();
     }
 
-    private void MainPage_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    private void MainPage_Loaded(object sender, RoutedEventArgs e)
     {
 
         ViewModel!.GroupedByDate.CollectionChanged -= Source_CollectionChanged;
@@ -89,7 +80,7 @@ public sealed partial class MainPage
 
     private void ResizeColumns()
     {
-        foreach (var column in Tree.Columns)
+        foreach (TreeGridColumn? column in Tree.Columns)
         {
             Tree.ColumnSizer.ResetAutoCalculation(column);
         }

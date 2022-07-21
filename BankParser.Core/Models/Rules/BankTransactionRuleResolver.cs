@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Reflection;
-using System.Text.RegularExpressions;
 
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 
 namespace BankParser.Core.Models.Rules;
+
+using GPS.IServiceProvider.Extensions;
 
 public record struct BankTransactionRuleResolver<TDelegate>(TDelegate Predicate)
     where TDelegate : Delegate
@@ -15,74 +15,139 @@ public record struct BankTransactionRuleResolver<TDelegate>(TDelegate Predicate)
 
 public static class BankTransactionRuleResolver
 {
-    private static PropertyInfo? memoProperty => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.Memo));
-    private static PropertyInfo? descProperty => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.Description));
-    private static PropertyInfo? otherProperty => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.OtherParty));
+    private static PropertyInfo? MemoProperty
+        => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.Memo));
 
-    public static Delegate GetMathHandler(Comparisons comparison)
-        => (MathHandler)(comparison switch
+    private static PropertyInfo? DescProperty
+        => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.Description));
+
+    private static PropertyInfo? OtherProperty
+        => typeof(BankTransactionView).GetProperty(nameof(BankTransactionView.OtherParty));
+
+    public static CalculationHandler GetMathHandler(Comparisons comparison)
+        => comparison switch
         {
-            Comparisons.IsGreaterThan => new(IsGreaterThan),
-            Comparisons.IsGreaterThanOrEqualTo => new(IsGreaterThanOrEqualTo),
-            Comparisons.IsLessThan => new(IsLessThan),
-            Comparisons.IsLessThanOrEqualTo => new(IsLessThanOrEqualTo),
-            Comparisons.IsEqualTo => new(IsEqualTo),
+            Comparisons.IsGreaterThan => IsGreaterThan,
+            Comparisons.IsGreaterThanOrEqualTo => IsGreaterThanOrEqualTo,
+            Comparisons.IsLessThan => IsLessThan,
+            Comparisons.IsLessThanOrEqualTo => IsLessThanOrEqualTo,
+            Comparisons.IsEqualTo => IsEqualTo,
             _ => throw new NotImplementedException(),
-        });
-
-    public static List<Delegate> GetRules(Type type)
-        => _predicatesByType.TryGetValue(type, out var handlers)
-            ? handlers : new();
-
-    public static List<Delegate> GetRules(PropertyInfo pi)
-        => GetRules(pi.PropertyType);
-
-    public static List<Delegate> GetRules(object obj)
-        => GetRules(obj.GetType());
-
-    private static Dictionary<Type, List<Delegate>> _predicatesByType = new();
-
-    public static Dictionary<Type, List<Delegate>> PredicateByType
-        => _predicatesByType ??= new()
-            {
-                { typeof(DateOnly), new () { new RuleHandler<MathPredicateParameters>(MathPredicate),} },
-                { typeof(decimal), new () { new RuleHandler<MathPredicateParameters>(MathPredicate),} },
-                { typeof(string), new () {
-                    new RuleHandler<StringParameters>(PatternPredicate),
-                    new RuleHandler<RegexParameters>(RegexPredicate),
-                } },
-            };
-
-    private static Func<IParameters, bool> ByPattern
-        => (parms) =>
-        {
-            if (parms is TransactionPropertyStringParameters p)
-            {
-                Regex regex = new(p.pattern);
-                return regex.IsMatch(p.pi?.GetValue(p.trx)?.ToString() ?? "");
-            }
-
-            return default;
         };
 
-    private static Func<IParameters, bool> ByRegex
-        => (parms) => parms is TransactionPropertyRegexParameters p
-        && p.regex.IsMatch(p.pi?.GetValue(p.trx)?.ToString() ?? "");
+    public static ByRegexHandler GetRegexHandler(RegexParameters parameters)
+        => RegexHandler;
+
+    public static ByPatternHandler GetPatternHandler(StringParameters parameters)
+        => PatternHandler;
+
+    public static List<Func<BankTransactionView, IParameters, CommonDelegate>> GetRules(Type type)
+        => _predicatesByType.TryGetValue(type, out List<Func<BankTransactionView, IParameters,
+            CommonDelegate>>? handlers)
+            ? handlers
+            : new();
+
+    public static List<Func<BankTransactionView, IParameters, CommonDelegate>> GetRules(PropertyInfo pi)
+        => GetRules(pi.PropertyType);
+
+    public static List<Func<BankTransactionView, IParameters, CommonDelegate>> GetRules(object obj)
+        => GetRules(obj.GetType());
+
+    private static readonly Dictionary<Type, List<Func<BankTransactionView, IParameters,
+        CommonDelegate>>> _predicatesByType = new();
+
+    public static Dictionary<Type, List<Func<BankTransactionView, IParameters, CommonDelegate>>> PredicateByType => _predicatesByType;
+
+    private static Func<IParameters, bool> ByPattern => static parameters =>
+    {
+        if (parameters is not TransactionPropertyStringParameters p)
+        {
+            return default;
+        }
+
+        Regex regex = new(p.Pattern);
+
+        return regex.IsMatch(
+            p.Pi?.GetValue(p.Trx)
+                ?.ToString() ??
+            ""
+        );
+
+    };
+
+    private static Func<IParameters, bool> ByRegex => static parameters
+        => parameters is TransactionPropertyRegexParameters p &&
+           p.Regex.IsMatch(
+               p.Pi?.GetValue(p.Trx)
+                   ?.ToString() ??
+               ""
+           );
 
     private static bool IsGreaterThan(BankTransactionView trx, PropertyInfo pi, IComparable value)
-        => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) > 0;
+        => (pi.GetValue(trx) as decimal?)?.CompareTo(value) > 0;
 
-    private static bool IsGreaterThanOrEqualTo(BankTransactionView trx, PropertyInfo pi, IComparable value)
-            => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) >= 0;
+    private static bool IsGreaterThanOrEqualTo(
+        BankTransactionView trx,
+        PropertyInfo pi,
+        IComparable value
+    )
+        => (pi.GetValue(trx) as decimal?)?.CompareTo(value) >= 0;
 
     private static bool IsLessThan(BankTransactionView trx, PropertyInfo pi, IComparable value)
-            => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) < 0;
+        => (pi.GetValue(trx) as decimal?)?.CompareTo(value) < 0;
 
-    private static bool IsLessThanOrEqualTo(BankTransactionView trx, PropertyInfo pi, IComparable value)
-            => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) <= 0;
+    private static bool IsLessThanOrEqualTo(
+        BankTransactionView trx,
+        PropertyInfo pi,
+        IComparable value
+    )
+        => (pi.GetValue(trx) as decimal?)?.CompareTo(value) <= 0;
+
+    private static bool RegexHandler(
+        BankTransactionView trx,
+        PropertyInfo pi,
+        RegexParameters value
+    )
+    {
+        return Invoke(pi.Name);
+
+        bool Invoke(string name)
+        {
+            CommonDelegate predicate = name switch
+            {
+                nameof(BankTransactionView.OtherParty) => OtherPartyRegexPredicate(trx, value),
+                nameof(BankTransactionView.Memo) => MemoRegexPredicate(trx, value),
+                nameof(BankTransactionView.Description) => DescriptionRegexPredicate(trx, value),
+                _ => throw new ArgumentOutOfRangeException(nameof(name), name, null),
+            };
+
+            return predicate.Invoke(trx, new PropertyRegexParameters(pi, value));
+        }
+    }
+
+    private static bool PatternHandler(
+        BankTransactionView trx,
+        PropertyInfo pi,
+        StringParameters value)
+    {
+        return Invoke(pi.Name);
+
+        bool Invoke(string name)
+        {
+            CommonDelegate predicate = name switch
+            {
+                nameof(BankTransactionView.OtherParty) => OtherPartyPatternPredicate(trx, value),
+                nameof(BankTransactionView.Memo) => MemoPatternPredicate(trx, value),
+                nameof(BankTransactionView.Description) => DescriptionPatternPredicate(trx, value),
+                _ => throw new ArgumentOutOfRangeException(nameof(name), name, null),
+            };
+
+            return predicate.Invoke(trx, new PropertyStringParameters(pi, value));
+        }
+    }
 
     private static bool IsEqualTo(BankTransactionView trx, PropertyInfo pi, IComparable value)
-            => (pi.GetValue(trx) as decimal? as IComparable)?.CompareTo(value) == 0;
+        => (pi.GetValue(trx) as decimal?)?.CompareTo(value) == 0;
 
     public static Delegate GetPredicate(RuleTypes ruleType)
         => ruleType switch
@@ -93,7 +158,7 @@ public static class BankTransactionRuleResolver
             RuleTypes.MemoRegexRule => MemoRegexPredicate<StringParameters>,
             RuleTypes.DescPatternRule => DescriptionPatternPredicate<RegexParameters>,
             RuleTypes.DescRegexRule => DescriptionRegexPredicate<RegexParameters>,
-            RuleTypes.OtherPatternRule => OtherpartyPatternPredicate<RegexParameters>,
+            RuleTypes.OtherPatternRule => BankTransactionRuleResolver.OtherPartyPatternPredicate<RegexParameters>,
             RuleTypes.OtherRegexRule => OtherPartyRegexPredicate<RegexParameters>,
             RuleTypes.IsEqualToRule => MathPredicate<MathPredicateParameters>,
             RuleTypes.IsLessThanRule => MathPredicate<MathPredicateParameters>,
@@ -103,57 +168,235 @@ public static class BankTransactionRuleResolver
             _ => throw new NotImplementedException(),
         };
 
-    public static Delegate PatternPredicate<TParameters>(TParameters parms)
-        where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is PropertyStringParameters p && ByPattern(p));
+    static BankTransactionRuleResolver()
+    {
+        _predicatesByType.Add(
+            typeof(string),
+            new List<Func<BankTransactionView, IParameters, CommonDelegate>>
+            {
+                PatternPredicate,
+                MemoPatternPredicate,
+                DescriptionPatternPredicate,
+            }
+        );
+        _predicatesByType.Add(
+            typeof(Regex),
+            new List<Func<BankTransactionView, IParameters, CommonDelegate>>
+            {
+                RegexPredicate,
+                MemoRegexPredicate,
+                DescriptionRegexPredicate,
+            }
+        );
+        _predicatesByType.Add(
+            typeof(IComparable),
+            new List<Func<BankTransactionView, IParameters, CommonDelegate>>
+            {
+                RegexPredicate,
+                MemoRegexPredicate,
+                DescriptionRegexPredicate,
+            }
+        );
+    }
 
-    public static Delegate RegexPredicate<TParameters>(TParameters parms)
+    public static CommonDelegate PatternPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
         where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is PropertyRegexParameters p && ByRegex(p));
+        => new(
+            (_,_)
+                => parameters is PropertyStringParameters p && BankTransactionRuleResolver.ByPattern(p),
+            typeof(PatternHandler));
 
-    public static Delegate MemoRegexPredicate<TParameters>(TParameters parms)
+    public static CommonDelegate RegexPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
         where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is RegexParameters p && ByRegex(trx));
+        => new(
+            (_,_)
+                => parameters is PropertyRegexParameters p && ByRegex(p),
+            typeof(RegexHandler));
 
-    public static Delegate MemoPatternPredicate<TParameters>(TParameters parms)
+    public static CommonDelegate MemoRegexPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
         where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is StringParameters p && trx is TransactionStringParameters sp
-            && ByPattern(new TransactionPropertyStringParameters(sp.trx, memoProperty, p.pattern)));
+    {
+        bool Func(BankTransactionView _, IParameters parms)
+            => parameters is RegexParameters p &&
+               ByPattern(new TransactionPropertyRegexParameters(trx, MemoProperty, p.Regex));
 
-    public static Delegate DescriptionRegexPredicate<TParameters>(TParameters parms)
-        where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is RegexParameters p && trx is TransactionRegexParameters sp
-            && ByPattern(new TransactionPropertyRegexParameters(sp.trx, memoProperty, p.regex)));
+        return new(Func, typeof(PropertyRegexHandler));
+    }
 
-    public static Delegate DescriptionPatternPredicate<TParameters>(TParameters parms)
+    public static CommonDelegate MemoPatternPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
         where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is StringParameters p && trx is TransactionStringParameters sp
-            && ByPattern(new TransactionPropertyStringParameters(sp.trx, descProperty, p.pattern)));
+    {
+        bool Func(BankTransactionView _, IParameters parms)
+            => parameters is StringParameters p &&
+               ByPattern(new TransactionPropertyStringParameters(trx, MemoProperty, p.Pattern));
 
-    public static Delegate OtherPartyRegexPredicate<TParameters>(TParameters parms)
-        where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is RegexParameters p && trx is TransactionRegexParameters sp
-            && ByPattern(new TransactionPropertyRegexParameters(sp.trx, descProperty, p.regex)));
+        return new(Func, typeof(PropertyPatternHandler));
+    }
 
-    public static Delegate OtherpartyPatternPredicate<TParameters>(TParameters parms)
+    public static CommonDelegate DescriptionRegexPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
         where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is StringParameters p && trx is TransactionStringParameters sp
-            && ByPattern(new TransactionPropertyStringParameters(sp.trx, otherProperty, p.pattern)));
+    {
+        bool Func(BankTransactionView _, IParameters parms)
+            => parameters is RegexParameters p &&
+               ByPattern(new TransactionPropertyRegexParameters(trx, DescProperty, p.Regex));
 
-    public static Delegate MathPredicate<TParameters>(TParameters parms)
+        return new(Func, typeof(PropertyRegexHandler));
+    }
+
+    public static CommonDelegate DescriptionPatternPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
         where TParameters : IParameters
-        => (CommonDelegate)(trx => parms is RegexParameters p && trx is TransactionRegexParameters sp
-            && ByPattern(new TransactionPropertyRegexParameters(sp.trx, otherProperty, p.regex)));
+    {
+        bool Func(BankTransactionView _, IParameters parms)
+            => parameters is StringParameters p &&
+               ByPattern(new TransactionPropertyStringParameters(trx, DescProperty, p.Pattern));
+
+        return new(Func, typeof(PropertyPatternHandler));
+    }
+
+    public static CommonDelegate OtherPartyRegexPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
+        where TParameters : IParameters
+    {
+        bool Func(BankTransactionView _, IParameters parms)
+            => parameters is RegexParameters p &&
+               ByPattern(new TransactionPropertyRegexParameters(
+                   trx,
+                   OtherProperty,
+                   p.Regex));
+
+        return new(
+            Func,
+            typeof(PropertyRegexHandler));
+    }
+
+    public static CommonDelegate OtherPartyPatternPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
+        where TParameters : IParameters
+    {
+        bool Func(BankTransactionView _, IParameters parms)
+            => parameters is StringParameters p &&
+               ByPattern(new TransactionPropertyStringParameters(trx, OtherProperty, p.Pattern));
+
+        return new(Func, typeof(PropertyPatternHandler));
+    }
+
+    public static CommonDelegate MathPredicate<TParameters>(BankTransactionView trx, TParameters parameters)
+        where TParameters : IParameters
+        => new(
+            (_, _) => parameters is MathPredicateParameters p &&
+                      BankTransactionRuleResolver.ByPattern(new MathPredicateParameters(p.Pi, p.Value, p.Calculation)),
+            typeof(MathRuleHandler)
+        );
+
+    public static IServiceCollection AddRulePredicates(this IServiceCollection services)
+    {
+        string[] ruleTypeNames = Enum.GetNames<RuleTypes>();
+
+        foreach (string name in ruleTypeNames)
+        {
+            RuleTypes ruleType = Enum.Parse<RuleTypes>(name);
+            Delegate predicate = BankTransactionRuleResolver.GetPredicate(ruleType);
+            services.AddTransient(_ => predicate);
+        }
+
+        return services;
+    }
+
+    public static IServiceCollection AddRuleParameters(this IServiceCollection services)
+    {
+        services.AddTransient<MathPredicateParameters>();
+        services.AddTransient<RegexParameters>();
+        services.AddTransient<StringParameters>();
+        services.AddTransient<TransactionRegexParameters>();
+        services.AddTransient<TransactionStringParameters>();
+        services.AddTransient<PropertyRegexParameters>();
+        services.AddTransient<PropertyStringParameters>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddDefaultDelegateHandlers(this IServiceCollection services)
+    {
+        services.AddTransient(static _ => DelegateFactory.DefaultCalculationHandler);
+        services.AddTransient(static _ => DelegateFactory.DefaultRegexHandler);
+        services.AddTransient(static _ => DelegateFactory.DefaultPatternHandler);
+
+        return services;
+    }
 }
 
-public delegate Delegate RuleHandler<TParameters>(TParameters parms) where TParameters : IParameters;
-public delegate Delegate RegexHandler<TParameters>(TParameters parms) where TParameters : IParameters;
-public delegate Delegate PatternHandler<TParameters>(TParameters parms) where TParameters : IParameters;
-public delegate Delegate PropertyPatternHandler<TParameters>(PropertyInfo pi, TParameters parms) where TParameters : IParameters;
-public delegate Delegate PropertyRegexHandler(PropertyInfo pi, Regex regex);
-public delegate Delegate MathRuleHandler(PropertyInfo pi, IComparable value, CalculationHandler calculation);
+public class DelegateFactory
+{
+    public Delegate? GetHandler<THandler>(DependencyInitializer initializer)
+        => default(THandler) switch
+        {
+            CalculationHandler => InitializeCalculationHandler(initializer),
+            ByRegexHandler => InitializeRegexHandler(initializer),
+            ByPatternHandler => InitializePatternHandler(initializer),
+            PropertyHandler => InitializePatternHandler(initializer),
+            _ => default,
+        };
+
+    public static CalculationHandler DefaultCalculationHandler { get; set; }
+        = static (_, _, _)
+            => default;
+
+    public static ByRegexHandler DefaultRegexHandler { get; set; }
+        = static (_, _, _)
+        => default;
+
+    public static ByPatternHandler DefaultPatternHandler { get; set; }
+        = static (_, _, _)
+        => default;
+
+    private static Delegate InitializePropertyHandler(DependencyInitializer initializer)
+    {
+        ValueWrapper<RegexParameters> value = new();
+        initializer.Apply(value);
+
+        return BankTransactionRuleResolver.GetRegexHandler(value.Value!);
+    }
+
+    private static Delegate InitializePatternHandler(DependencyInitializer initializer)
+    {
+        ValueWrapper<StringParameters> value = new();
+        initializer.Apply(value);
+
+        return BankTransactionRuleResolver.GetPatternHandler(value.Value!);
+    }
+
+    private static Delegate InitializeRegexHandler(DependencyInitializer initializer)
+    {
+        ValueWrapper<RegexParameters> value = new();
+        initializer.Apply(value);
+
+        return BankTransactionRuleResolver.GetRegexHandler(value.Value!);
+    }
+
+    private static Delegate InitializeCalculationHandler(DependencyInitializer initializer)
+    {
+        ValueWrapper<Comparisons> value = new();
+        initializer.Apply(value);
+
+        return BankTransactionRuleResolver.GetMathHandler(value.Value);
+    }
+}
+
+public class ValueWrapper<TValue>
+
+{
+    public TValue? Value
+    {
+        get;
+        set;
+    }
+}
+
+public delegate CommonDelegate RuleHandler<in TParameters>(TParameters parameters) where TParameters : IParameters;
+public delegate CommonDelegate RegexHandler(RegexParameters parameters);
+public delegate CommonDelegate PatternHandler(StringParameters parameters);
+public delegate CommonDelegate PropertyPatternHandler(PropertyInfo pi, string pattern);
+public delegate CommonDelegate PropertyRegexHandler(PropertyInfo pi, Regex regex);
+public delegate CommonDelegate MathRuleHandler(PropertyInfo pi, IComparable value, CalculationHandler calculation);
 public delegate bool CalculationHandler(BankTransactionView trx, PropertyInfo pi, IComparable value);
-public delegate bool ByPatternHandler(BankTransactionView trx, PropertyInfo pi, IParameters parms);
-public delegate bool ByRegexHandler(BankTransactionView trx, PropertyInfo pi, Regex regex);
-public delegate bool MathHandler(BankTransactionView trx, PropertyInfo pi, IComparable value);
-public delegate bool CommonDelegate(IParameters parms);
+public delegate bool ByPatternHandler(BankTransactionView trx, PropertyInfo pi, StringParameters parameters);
+public delegate bool ByRegexHandler(BankTransactionView trx, PropertyInfo pi, RegexParameters regex);
+public delegate bool PropertyHandler(BankTransactionView trx, PropertyInfo pi, IParameters regex);

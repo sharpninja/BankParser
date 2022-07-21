@@ -1,6 +1,4 @@
-﻿using Microsoft.UI.Xaml.Controls;
-
-namespace BankParser.Helpers;
+﻿namespace BankParser.Helpers;
 
 public static class FrameExtensions
 {

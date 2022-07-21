@@ -1,8 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-using BankParser.ViewModels;
-
-using Syncfusion.UI.Xaml.Editors;
+﻿//using System.Text.RegularExpressions;
 
 namespace BankParser.Views;
 

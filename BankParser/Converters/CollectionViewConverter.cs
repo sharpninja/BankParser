@@ -1,13 +1,4 @@
-﻿using System;
-
-using BankParser.Core.Models;
-using BankParser.ViewModels;
-
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Data;
-
-namespace BankParser.Converters;
+﻿namespace BankParser.Converters;
 
 public class CollectionViewConverter : IValueConverter
 {

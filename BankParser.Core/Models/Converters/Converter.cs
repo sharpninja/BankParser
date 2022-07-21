@@ -1,12 +1,12 @@
-﻿using System.Globalization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+﻿namespace BankParser.Core.Models.Converters;
 
-namespace BankParser.Core.Models.Converters;
+using System.Globalization;
+
+using Newtonsoft.Json.Converters;
 
 internal static class Converter
 {
-    public static readonly JsonSerializerSettings Settings = new()
+    public static readonly JsonSerializerSettings _settings = new()
     {
         MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
         DateParseHandling = DateParseHandling.None,

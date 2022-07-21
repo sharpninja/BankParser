@@ -1,6 +1,4 @@
-﻿using Microsoft.UI.Xaml;
-
-namespace BankParser.Contracts.Services;
+﻿namespace BankParser.Contracts.Services;
 
 public interface IThemeSelectorService
 {

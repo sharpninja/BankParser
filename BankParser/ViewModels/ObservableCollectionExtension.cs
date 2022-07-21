@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace BankParser.ViewModels;
+﻿namespace BankParser.ViewModels;
 
 public static class ObservableCollectionExtension
 {

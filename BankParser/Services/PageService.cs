@@ -1,14 +1,4 @@
-﻿using System;
-
-using BankParser.Contracts.Services;
-using BankParser.ViewModels;
-using BankParser.Views;
-
-using CommunityToolkit.Mvvm.ComponentModel;
-
-using Microsoft.UI.Xaml.Controls;
-
-namespace BankParser.Services;
+﻿namespace BankParser.Services;
 
 public class PageService : IPageService
 {
@@ -30,19 +20,19 @@ public class PageService : IPageService
         return pageType;
     }
 
-    private void Configure<VM, V>()
-        where VM : ObservableObject
-        where V : Page
+    private void Configure<TVm, TV>()
+        where TVm : ObservableObject
+        where TV : Page
     {
         lock (_pages)
         {
-            string key = typeof(VM).FullName ?? nameof(VM);
+            string key = typeof(TVm).FullName ?? nameof(TVm);
             if (_pages.ContainsKey(key))
             {
                 throw new ArgumentException($"The key {key} is already configured in PageService");
             }
 
-            Type type = typeof(V);
+            Type type = typeof(TV);
             if (_pages.Any(p => p.Value == type))
             {
                 throw new ArgumentException($"This type is already configured with key {_pages.First(p => p.Value == type).Key}");

@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-
-namespace BankParser.Core.Helpers;
+﻿namespace BankParser.Core.Helpers;
 
 public static class Json
 {
@@ -9,6 +7,6 @@ public static class Json
             => JsonConvert.DeserializeObject<T?>(value));
 
     public static async Task<string> StringifyAsync(object? value)
-        => await Task.Run<string>(()
+        => await Task.Run(()
             => JsonConvert.SerializeObject(value));
 }

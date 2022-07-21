@@ -1,23 +1,14 @@
-﻿using BankParser.Activation;
-using BankParser.Contracts.Services;
-using BankParser.Core.Contracts.Services;
-using BankParser.Core.Services;
-using BankParser.Helpers;
-using BankParser.Models;
-using BankParser.Services;
-using BankParser.ViewModels;
-
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.UI.Xaml;
-using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
-using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
-using BankParser.Views;
-using Microsoft.UI.Dispatching;
+﻿
 
 // To learn more about WinUI3, see: https://docs.microsoft.com/windows/apps/winui/winui3/.
 namespace BankParser;
+
+using Core.Models.Rules;
+
+using Syncfusion.Licensing;
+
+using DispatcherQueueHandler = Microsoft.UI.Dispatching.DispatcherQueueHandler;
+using UnhandledExceptionEventArgs = Microsoft.UI.Xaml.UnhandledExceptionEventArgs;
 
 public partial class App : Application
 {
@@ -52,10 +43,16 @@ public partial class App : Application
             services.AddSingleton<MainPage>();
             services.AddSingleton<ShellPage>();
             services.AddSingleton<ShellViewModel>();
-            services.AddSingleton(_ => new Window()
-            {
+            services.AddSingleton(
+                static _ => new Window
+                {
                 Title = "AppDisplayName".GetLocalized(),
             });
+
+            // Rule Parameters
+            services.AddRulePredicates();
+            services.AddRuleParameters();
+            services.AddDefaultDelegateHandlers();
 
             // Configuration
             services.Configure<LocalSettingsOptions>(context.Configuration.GetSection(nameof(LocalSettingsOptions)));
@@ -65,15 +62,19 @@ public partial class App : Application
     private static readonly Window? _window = null;
 
     public static T? GetService<T>()
-        where T : class => _host.Services.GetService(typeof(T)) as T;
+        where T : class
+        => _host.Services.GetService(typeof(T)) as T;
+
+    public static object? GetService(Type type)
+        => _host.Services.GetService(type);
 
     public static Window MainWindow => _window ?? GetService<Window>()!;
 
     public App()
     {
-        var config = _host.Services.GetRequiredService<IConfiguration>();
+        IConfiguration config = _host.Services.GetRequiredService<IConfiguration>();
         string? sf = config["SF"];
-        Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(sf);
+        SyncfusionLicenseProvider.RegisterLicense(sf);
         InitializeComponent();
         UnhandledException += App_UnhandledException;
     }

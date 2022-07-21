@@ -1,11 +1,10 @@
 ﻿using System;
-using Newtonsoft.Json;
 
 namespace BankParser.Core.Models.Converters;
 
 internal class ParseStringConverter : JsonConverter
 {
-    public static readonly ParseStringConverter Singleton = new();
+    public static readonly ParseStringConverter _singleton = new();
     public override bool CanConvert(Type t) => (t == typeof(long)) || (t == typeof(long?));
 
     public override object? ReadJson(

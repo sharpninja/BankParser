@@ -1,11 +1,4 @@
-﻿using System;
-
-using BankParser.Contracts.Services;
-using BankParser.ViewModels;
-
-using LaunchActivatedEventArgs = Microsoft.UI.Xaml.LaunchActivatedEventArgs;
-
-namespace BankParser.Activation;
+﻿namespace BankParser.Activation;
 
 public class DefaultActivationHandler : ActivationHandler<LaunchActivatedEventArgs>
 {

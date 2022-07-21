@@ -1,12 +1,4 @@
-﻿using System;
-using BankParser.Contracts.Services;
-using BankParser.Contracts.ViewModels;
-using BankParser.Helpers;
-
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation;
-
-namespace BankParser.Services;
+﻿namespace BankParser.Services;
 
 // For more information on navigation between pages see
 // https://github.com/microsoft/TemplateStudio/blob/main/docs/WinUI/navigation.md

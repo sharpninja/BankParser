@@ -1,24 +1,27 @@
 ﻿using System;
 
 using static BankParser.Core.Models.Rules.BankTransactionRuleResolver;
+// ReSharper disable UnusedMember.Global
 
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 
 namespace BankParser.Core.Models.Rules;
 
 public record struct BankTransactionRule<TDelegate>(
-    string RuleName,
+    RuleTypes RuleType,
     BankTransactionRuleResolver<TDelegate> SelectionResolver,
     Action<BankTransactionView> Action
 ) : IRule
     where TDelegate : Delegate
 {
-    private bool InvokeResolver(BankTransactionView trx)
+    public readonly string RuleName => RuleType.ToString();
+
+    private readonly bool InvokeResolver(BankTransactionView trx)
         => (bool?)SelectionResolver.Predicate.DynamicInvoke(trx) ?? false;
 
     public void ApplyRule(IEnumerable<BankTransactionView> transactions)
     {
-        foreach (var trx in transactions
+        foreach (BankTransactionView trx in transactions
             .Where(InvokeResolver))
         {
             Action(trx);
@@ -28,7 +31,7 @@ public record struct BankTransactionRule<TDelegate>(
 
 public record struct BankTransactionRule
 {
-    private static Dictionary<RuleTypes, BankTransactionRuleResolver<Delegate>> AvailableRules
+    public static Dictionary<RuleTypes, BankTransactionRuleResolver<Delegate?>> AvailableRules
         => new()
             {
                 { RuleTypes.IsEqualToRule, new(GetMathHandler(Comparisons.IsEqualTo)) },
@@ -46,10 +49,10 @@ public record struct BankTransactionRule
                 { RuleTypes.OtherRegexRule, new (GetPredicate(RuleTypes.OtherRegexRule)) },
             };
 
-    private static BankTransactionRuleResolver<Delegate> GetDelegate(RuleTypes ruleType)
-        => AvailableRules.TryGetValue(ruleType, out var del)
+    private static BankTransactionRuleResolver<Delegate?> GetDelegate(RuleTypes ruleType)
+        => AvailableRules.TryGetValue(ruleType, out BankTransactionRuleResolver<Delegate?> del)
             ? del : default;
 
-    public static BankTransactionRule<Delegate> GetRule(RuleTypes ruleType, Action<BankTransactionView> action)
-        => new(ruleType.ToString(), GetDelegate(ruleType), action);
+    public static BankTransactionRule<Delegate?> GetRule(RuleTypes ruleType, Action<BankTransactionView> action)
+        => new(ruleType, GetDelegate(ruleType), action);
 }

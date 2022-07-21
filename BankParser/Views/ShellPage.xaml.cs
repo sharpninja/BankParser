@@ -1,15 +1,4 @@
-﻿using BankParser.Contracts.Services;
-using BankParser.Helpers;
-using BankParser.ViewModels;
-
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-
-using Windows.System;
-
-namespace BankParser.Views;
+﻿namespace BankParser.Views;
 
 public sealed partial class ShellPage : Page
 {
@@ -52,7 +41,8 @@ public sealed partial class ShellPage : Page
 
     private static KeyboardAccelerator BuildKeyboardAccelerator(VirtualKey key, VirtualKeyModifiers? modifiers = null)
     {
-        KeyboardAccelerator keyboardAccelerator = new KeyboardAccelerator() { Key = key,};
+        KeyboardAccelerator keyboardAccelerator = new KeyboardAccelerator
+            { Key = key,};
 
         if (modifiers.HasValue)
         {

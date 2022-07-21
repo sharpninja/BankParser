@@ -1,14 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-
-using BankParser.Contracts.Services;
-using BankParser.Core.Contracts.Services;
-using BankParser.Core.Helpers;
-using BankParser.Models;
-
-using Microsoft.Extensions.Options;
-
-namespace BankParser.Services;
+﻿namespace BankParser.Services;
 
 public class LocalSettingsServiceUnpackaged : ILocalSettingsService
 {

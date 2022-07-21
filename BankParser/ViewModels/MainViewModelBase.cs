@@ -1,8 +1,4 @@
-﻿using BankParser.Core.Models;
-
-using CommunityToolkit.Mvvm.ComponentModel;
-
-namespace BankParser.ViewModels;
+﻿namespace BankParser.ViewModels;
 
 [ObservableObject]
 public partial class MainViewModelBase

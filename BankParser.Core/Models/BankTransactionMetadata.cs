@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 

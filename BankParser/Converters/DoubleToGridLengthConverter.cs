@@ -1,7 +1,4 @@
-﻿using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Data;
-
-namespace BankParser.Converters;
+﻿namespace BankParser.Converters;
 
 public class DoubleToGridLengthConverter : IValueConverter
 {

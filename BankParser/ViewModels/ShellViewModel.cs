@@ -1,16 +1,4 @@
-﻿using System.Windows.Input;
-
-using BankParser.Contracts.Services;
-
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Navigation;
-
-using Syncfusion.UI.Xaml.Editors;
-
-namespace BankParser.ViewModels;
+﻿namespace BankParser.ViewModels;
 
 public partial class ShellViewModel : ObservableRecipient
 {
@@ -77,7 +65,7 @@ public partial class ShellViewModel : ObservableRecipient
         NavigationService.Navigated += OnNavigated;
     }
 
-    private void MainViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void MainViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         MenuUndoCommand.NotifyCanExecuteChanged();
         MenuRedoCommand.NotifyCanExecuteChanged();

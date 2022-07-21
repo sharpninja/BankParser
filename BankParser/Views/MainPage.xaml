@@ -18,13 +18,21 @@
         <converters:CollectionViewConverter
             x:Key="CollectionViewConverter" />
         <converters:PaddingRemovingConverter
-            x:Key="PaddingRemovingConverter"/>
+            x:Key="PaddingRemovingConverter" />
         <DataTemplate
             x:Key="BankItem"
             x:DataType="models:BankTransactionView">
             <TextBlock
                 Text="{x:Bind}" />
         </DataTemplate>
+        <Style
+            TargetType="TextBlock"
+            x:Key="TabHeader">
+            <Setter
+                Property="FontWeight"
+                Value="Black" />
+        </Style>
+
     </Page.Resources>
     <Grid
         x:Name="ContentArea"
@@ -96,142 +104,237 @@
                     DisplayNumberFormat="C2" />
             </treeGrid:SfTreeGrid.Columns>
         </treeGrid:SfTreeGrid>
-        <Border
-            x:Name="Details"
+        <TabView
             Grid.Column="1"
             Grid.Row="0"
-            Padding="4"
-            Margin="4"
-            CornerRadius="4"
-            BorderThickness="3"
-            BorderBrush="{ThemeResource TextBoxBorderThemeBrush}"
-            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition
-                        Height="Auto" />
-                    <RowDefinition
-                        Height="Auto" />
-                    <RowDefinition
-                        Height="Auto" />
-                    <RowDefinition
-                        Height="Auto" />
-                    <RowDefinition
-                        Height="*" />
-                    <RowDefinition
-                        Height="Auto" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition
-                        Width="*" />
-                    <ColumnDefinition
-                        Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock
-                    Grid.Row="0"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="2"
-                    Style="{ThemeResource SubheaderTextBlockStyle}"
-                    Text="{Binding OtherParty}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalTextAlignment="Center" />
-                <syncfusion:SfComboBox
-                    Grid.Row="1"
-                    Grid.Column="0"
-                    IsEnabled="{x:Bind ViewModel.SelectedTransactionIsNotNull, Mode=OneWay}"
-                    ItemsSource="{x:Bind ViewModel.PotentialFilters, Mode=OneWay}"
-                    SelectedItem="{x:Bind ViewModel.FilterText, Mode=TwoWay}"
-                    Text="{x:Bind ViewModel.FilterText, Mode=OneWay}" />
-                <Button
-                    Grid.Row="1"
-                    Grid.Column="1"
-                    Margin="0, 8, 0 , 0"
-                    IsEnabled="{x:Bind ViewModel.SelectedTransactionIsNotNull, Mode=OneWay}"
-                    Command="{x:Bind ViewModel.AddFilterCommand}">
-                    <StackPanel
-                        Orientation="Horizontal">
-                        <FontIcon
-                            Glyph="&#xE71C;" />
-                        <TextBlock>Add Filter</TextBlock>
-                    </StackPanel>
-                </Button>
-                <RichTextBlock
-                    x:Name="DetailsTextBlock"
-                    Grid.Row="2"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="2"
-                    Margin="0, 8, 0 , 0"
-                    Padding="0"
-                    HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch"
-                    DataContext="{x:Bind ViewModel.SelectedTransaction, Mode=OneWay}">
-                    <Paragraph
-                        Margin="0, 8, 0 , 0"
-                        FontSize="18">
-                        <Run
-                            FontWeight="ExtraBold">Amount Debit:</Run>
-                        <Run
-                            Text="{Binding AmountDebitString, Mode=OneWay}" />
-                        <LineBreak />
-                        <Run
-                            FontWeight="ExtraBold">Amount Credit:</Run>
-                        <Run
-                            Text="{Binding AmountCreditString, Mode=OneWay}" />
-                    </Paragraph>
-                    <Paragraph
-                        Margin="0, 8, 0 , 0">
-                        <Run
-                            FontWeight="ExtraBold">Description:</Run>
-                        <LineBreak />
-                        <Run
-                            Text="{Binding Description, Mode=OneWay}" />
-                    </Paragraph>
-                    <Paragraph
-                        Margin="0, 8, 0 , 0">
-                        <Run
-                            FontWeight="ExtraBold">Memo:</Run>
-                        <LineBreak />
-                        <Run
-                            Text="{Binding Memo, Mode=OneWay}" />
-                    </Paragraph>
-                    <Paragraph
-                        Margin="0, 8, 0 , 0">
-                        <Run
-                            FontWeight="ExtraBold">
-                            Notes:
-                        </Run>
-                        <LineBreak />
-                        <InlineUIContainer>
-                            <RichEditBox
-                                x:Name="Notes"
-                                Margin="4, 8, 4 , 4"
-                                Loaded="Notes_OnLoaded"
-                                AcceptsReturn="true"
-                                Height="88"
+            CanDragTabs="False"
+            CanReorderTabs="False"
+            IsAddTabButtonVisible="False"
+            VerticalAlignment="Stretch"
+            TabWidthMode="Equal">
+            <TabView.TabItems>
+                <TabViewItem
+                    IsClosable="False"
+                    VerticalAlignment="Stretch">
+                    <TabViewItem.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock
+                                Text="Details"
+                                Style="{StaticResource TabHeader}" />
+                        </DataTemplate>
+                    </TabViewItem.HeaderTemplate>
+                    <Border
+                        x:Name="Details"
+                        Padding="4"
+                        Margin="4"
+                        CornerRadius="3"
+                        BorderThickness="2"
+                        VerticalAlignment="Stretch"
+                        BorderBrush="{ThemeResource TextBoxBorderThemeBrush}"
+                        Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+                        <Grid
+                            DataContext="{x:Bind ViewModel.SelectedTransaction, Mode=OneWay}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition
+                                    Height="Auto" />
+                                <RowDefinition
+                                    Height="Auto" />
+                                <RowDefinition
+                                    Height="Auto" />
+                                <RowDefinition
+                                    Height="Auto" />
+                                <RowDefinition
+                                    Height="*" />
+                                <RowDefinition
+                                    Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition
+                                    Width="*" />
+                                <ColumnDefinition
+                                    Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Style="{ThemeResource SubheaderTextBlockStyle}"
+                                Text="{Binding OtherParty}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalTextAlignment="Center" />
+                            <syncfusion:SfComboBox
+                                Grid.Row="1"
+                                Grid.Column="0"
                                 IsEnabled="{x:Bind ViewModel.SelectedTransactionIsNotNull, Mode=OneWay}"
-                                Width="{Binding ElementName=Details, Converter={StaticResource PaddingRemovingConverter}}"
-                                ClipboardCopyFormat="AllFormats">
-                            </RichEditBox>
-                        </InlineUIContainer>
-                    </Paragraph>
-                </RichTextBlock>
-                <RichTextBlock
-                    Grid.Row="5"
-                    Grid.Column="0"
-                    Grid.ColumnSpan="2"
-                    Margin="0, 8, 0 , 0">
-                    <Paragraph>
-                        <Run
-                            FontWeight="ExtraBold">Total Debits:</Run>
-                        <Run
-                            Text="{x:Bind ViewModel.TotalDebits, Mode=OneWay}" />
-                        <Run
-                            FontWeight="ExtraBold">Total Credits:</Run>
-                        <Run
-                            Text="{x:Bind ViewModel.TotalCredits, Mode=OneWay}" />
-                    </Paragraph>
-                </RichTextBlock>
-            </Grid>
-        </Border>
+                                ItemsSource="{x:Bind ViewModel.PotentialFilters, Mode=OneWay}"
+                                SelectedItem="{x:Bind ViewModel.FilterText, Mode=TwoWay}"
+                                Text="{x:Bind ViewModel.FilterText, Mode=OneWay}" />
+                            <Button
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Margin="0, 8, 0 , 0"
+                                IsEnabled="{x:Bind ViewModel.SelectedTransactionIsNotNull, Mode=OneWay}"
+                                Command="{x:Bind ViewModel.AddFilterCommand}">
+                                <StackPanel
+                                    Orientation="Horizontal">
+                                    <FontIcon
+                                        Glyph="&#xE71C;" />
+                                    <TextBlock>Add Filter</TextBlock>
+                                </StackPanel>
+                            </Button>
+                            <RichTextBlock
+                                x:Name="DetailsTextBlock"
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Margin="0, 8, 0 , 0"
+                                Padding="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                DataContext="{x:Bind ViewModel.SelectedTransaction, Mode=OneWay}">
+                                <Paragraph
+                                    Margin="0, 8, 0 , 0"
+                                    FontSize="18">
+                                    <Run
+                                        FontWeight="ExtraBold">Amount Debit:</Run>
+                                    <Run
+                                        Text="{Binding AmountDebitString, Mode=OneWay}" />
+                                    <LineBreak />
+                                    <Run
+                                        FontWeight="ExtraBold">Amount Credit:</Run>
+                                    <Run
+                                        Text="{Binding AmountCreditString, Mode=OneWay}" />
+                                </Paragraph>
+                                <Paragraph
+                                    Margin="0, 8, 0 , 0">
+                                    <Run
+                                        FontWeight="ExtraBold">Description:</Run>
+                                    <LineBreak />
+                                    <Run
+                                        Text="{Binding Description, Mode=OneWay}" />
+                                </Paragraph>
+                                <Paragraph
+                                    Margin="0, 8, 0 , 0">
+                                    <Run
+                                        FontWeight="ExtraBold">Memo:</Run>
+                                    <LineBreak />
+                                    <Run
+                                        Text="{Binding Memo, Mode=OneWay}" />
+                                </Paragraph>
+                                <Paragraph
+                                    Margin="0, 8, 0 , 0">
+                                    <Run
+                                        FontWeight="ExtraBold">
+                                        Notes:
+                                    </Run>
+                                    <LineBreak />
+                                    <InlineUIContainer>
+                                        <RichEditBox
+                                            x:Name="Notes"
+                                            Margin="4, 8, 4 , 4"
+                                            Loaded="Notes_OnLoaded"
+                                            AcceptsReturn="true"
+                                            Height="88"
+                                            IsEnabled="{x:Bind ViewModel.SelectedTransactionIsNotNull, Mode=OneWay}"
+                                            Width="{Binding ElementName=Details, Converter={StaticResource PaddingRemovingConverter}}"
+                                            ClipboardCopyFormat="AllFormats">
+                                        </RichEditBox>
+                                    </InlineUIContainer>
+                                </Paragraph>
+                            </RichTextBlock>
+                            <RichTextBlock
+                                Grid.Row="5"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Margin="0, 8, 0 , 0">
+                                <Paragraph>
+                                    <Run
+                                        FontWeight="ExtraBold">Total Debits:</Run>
+                                    <Run
+                                        Text="{x:Bind ViewModel.TotalDebits, Mode=OneWay}" />
+                                    <Run
+                                        FontWeight="ExtraBold">Total Credits:</Run>
+                                    <Run
+                                        Text="{x:Bind ViewModel.TotalCredits, Mode=OneWay}" />
+                                </Paragraph>
+                            </RichTextBlock>
+                        </Grid>
+                    </Border>
+                </TabViewItem>
+                <TabViewItem
+                    IsClosable="False"
+                    VerticalAlignment="Stretch">
+                    <TabViewItem.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock
+                                Text="Rules"
+                                Style="{StaticResource TabHeader}" />
+                        </DataTemplate>
+                    </TabViewItem.HeaderTemplate>
+                    <Border
+                        x:Name="Rules"
+                        Padding="4"
+                        Margin="4"
+                        CornerRadius="3"
+                        BorderThickness="2"
+                        VerticalAlignment="Stretch"
+                        BorderBrush="{ThemeResource TextBoxBorderThemeBrush}"
+                        Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}">
+                        <Grid
+                            DataContext="{x:Bind ViewModel.SelectedTransaction, Mode=OneWay}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition
+                                    Height="Auto" />
+                                <RowDefinition
+                                    Height="Auto" />
+                                <RowDefinition
+                                    Height="Auto" />
+                                <RowDefinition
+                                    Height="Auto" />
+                                <RowDefinition
+                                    Height="*" />
+                                <RowDefinition
+                                    Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition
+                                    Width="*" />
+                                <ColumnDefinition
+                                    Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="2"
+                                Style="{ThemeResource SubheaderTextBlockStyle}"
+                                Text="{Binding OtherParty}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalTextAlignment="Center" />
+                            <syncfusion:SfComboBox
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                IsEnabled="{x:Bind ViewModel.SelectedTransactionIsNotNull, Mode=OneWay}"
+                                ItemsSource="{x:Bind ViewModel.PotentialFilters, Mode=OneWay}"
+                                SelectedItem="{x:Bind ViewModel.FilterText, Mode=TwoWay}"
+                                Text="{x:Bind ViewModel.FilterText, Mode=OneWay}" />
+                            <Button
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Margin="0, 8, 0 , 0"
+                                IsEnabled="{x:Bind ViewModel.SelectedTransactionIsNotNull, Mode=OneWay}"
+                                Command="{x:Bind ViewModel.CreateRuleCommand}"
+                                CommandParameter="{x:Bind ViewModel.FilterText, Mode=OneWay}">
+                                <StackPanel
+                                    Orientation="Horizontal">
+                                    <FontIcon
+                                        Glyph="&#xE945;" />
+                                    <TextBlock>Create Rule</TextBlock>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </TabViewItem>
+            </TabView.TabItems>
+        </TabView>
     </Grid>
 </Page>

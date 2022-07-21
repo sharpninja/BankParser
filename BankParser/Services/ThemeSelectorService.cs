@@ -1,15 +1,8 @@
-﻿using System;
-
-using BankParser.Contracts.Services;
-using BankParser.Helpers;
-
-using Microsoft.UI.Xaml;
-
-namespace BankParser.Services;
+﻿namespace BankParser.Services;
 
 public class ThemeSelectorService : IThemeSelectorService
 {
-    private const string SettingsKey = "AppBackgroundRequestedTheme";
+    private const string SETTINGS_KEY = "AppBackgroundRequestedTheme";
 
     public ElementTheme Theme { get; set; } = ElementTheme.Default;
 
@@ -48,7 +41,7 @@ public class ThemeSelectorService : IThemeSelectorService
 
     private async Task<ElementTheme> LoadThemeFromSettingsAsync()
     {
-        string? themeName = await _localSettingsService.ReadSettingAsync<string>(SettingsKey);
+        string? themeName = await _localSettingsService.ReadSettingAsync<string>(ThemeSelectorService.SETTINGS_KEY);
 
         if (Enum.TryParse(themeName, out ElementTheme cacheTheme))
         {
@@ -59,5 +52,5 @@ public class ThemeSelectorService : IThemeSelectorService
     }
 
     private Task SaveThemeInSettingsAsync(ElementTheme theme)
-        => _localSettingsService.SaveSettingAsync(SettingsKey, theme.ToString());
+        => _localSettingsService.SaveSettingAsync(ThemeSelectorService.SETTINGS_KEY, theme.ToString());
 }

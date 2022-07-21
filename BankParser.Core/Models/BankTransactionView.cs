@@ -1,18 +1,14 @@
 ﻿using System;
-using System.Reflection;
-using System.Text.RegularExpressions;
-
-using BankParser.Core.Models.Converters;
-
-using ChoETL;
-
-using CommunityToolkit.Mvvm.ComponentModel;
-
-using Newtonsoft.Json;
 
 // ReSharper disable SuggestVarOrType_BuiltInTypes
 
 namespace BankParser.Core.Models;
+
+using ChoETL;
+
+using Converters;
+
+using Microsoft.UI.Xaml;
 
 [ObservableObject]
 public partial class BankTransactionView
@@ -21,7 +17,10 @@ public partial class BankTransactionView
     private string? _otherParty;
 
     private readonly ImmutableBankTransaction _trx;
-    private string _notes;
+    private string? _notes;
+
+    [ObservableProperty]
+    public Visibility _visibility = Visibility.Visible;
 
     public BankTransactionView(ImmutableBankTransaction trx)
     {
@@ -84,7 +83,7 @@ public partial class BankTransactionView
     [ JsonProperty ]
     public string Notes
     {
-        get => _notes;
+        get => _notes ?? "";
         set => SetProperty(ref _notes, value);
     }
 
@@ -93,14 +92,14 @@ public partial class BankTransactionView
     {
         get
         {
-            var results = OtherParty
+            List<string> results = OtherParty
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .SelectMany(
                 static s
                 => s.Split('*', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             ).ToList();
 
-            var newResult = results.ToList();
+            List<string> newResult = results.ToList();
 
             for (int i = 0; i < results.Count; i++)
             {
@@ -149,7 +148,7 @@ public partial class BankTransactionView
 
     private string? ParseDescription()
     {
-        if (Description is (null or ""))
+        if (Description is null or "")
         {
             return null;
         }
@@ -179,7 +178,7 @@ public partial class BankTransactionView
             ("transfer", "fee") => "Fee: Transfer",
             (_, "fee") => $"Fee: {Description}",
             ("transaction", "comment") => "Comment",
-            _ => $"UNKOWN: [{Description}]",
+            _ => $"UNKNOWN: [{Description}]",
         };
     }
 
@@ -219,7 +218,7 @@ public partial class BankTransactionView
         }
         else if (_debitParser.IsMatch(otherParty))
         {
-            (bool match, var otherPartyRecord) = Match(BankTransactionView._debitParser, 4,
+            (bool match, OtherPartyRecord otherPartyRecord) = Match(BankTransactionView._debitParser, 4,
                 static groupArray => new(groupArray[1].Value, null, null,
                     DateTimeOffset.Parse(groupArray[2].Value), groupArray[3].Value));
 

@@ -1,10 +1,4 @@
-﻿using System.Text;
-
-using BankParser.Core.Contracts.Services;
-
-using Newtonsoft.Json;
-
-namespace BankParser.Core.Services;
+﻿namespace BankParser.Core.Services;
 
 public class FileService : IFileService
 {

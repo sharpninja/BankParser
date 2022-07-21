@@ -1,6 +1,4 @@
-﻿using BankParser.Core.Models;
-
-namespace BankParser.Core.Contracts.Services;
+﻿namespace BankParser.Core.Contracts.Services;
 
 public interface ITransactionService
 {
@@ -11,9 +9,9 @@ public interface ITransactionService
 
     List<ImmutableBankTransaction> LoadData(string fileName);
 
-    IEnumerable<ImmutableBankTransaction> FromCsv(string fileName);
+    IEnumerable<ImmutableBankTransaction>? FromCsv(string fileName);
 
-    IEnumerable<ImmutableBankTransaction> FromJson(string json);
+    IEnumerable<ImmutableBankTransaction>? FromJson(string json);
 
     List<BankTransactionView> FromImmutable(IEnumerable<ImmutableBankTransaction> unfiltered)
         => unfiltered.Select(static trx => new BankTransactionView(trx)).ToList();

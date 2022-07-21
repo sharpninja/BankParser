@@ -2,6 +2,6 @@
 
 namespace BankParser.Core.Models.Rules;
 
-public record StringParameters(string pattern) : IParameters
+public record StringParameters(string Pattern) : IParameters
 {
 }
