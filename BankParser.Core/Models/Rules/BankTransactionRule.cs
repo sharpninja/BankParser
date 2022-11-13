@@ -31,7 +31,7 @@ public record struct BankTransactionRule<TDelegate>(
 
 public record struct BankTransactionRule
 {
-    public static Dictionary<RuleTypes, BankTransactionRuleResolver<Delegate?>> AvailableRules
+    public static Dictionary<RuleTypes, BankTransactionRuleResolver<Delegate>> AvailableRules
         => new()
             {
                 { RuleTypes.IsEqualToRule, new(GetMathHandler(Comparisons.IsEqualTo)) },
@@ -49,10 +49,10 @@ public record struct BankTransactionRule
                 { RuleTypes.OtherRegexRule, new (GetPredicate(RuleTypes.OtherRegexRule)) },
             };
 
-    private static BankTransactionRuleResolver<Delegate?> GetDelegate(RuleTypes ruleType)
-        => AvailableRules.TryGetValue(ruleType, out BankTransactionRuleResolver<Delegate?> del)
+    private static BankTransactionRuleResolver<Delegate> GetDelegate(RuleTypes ruleType)
+        => AvailableRules.TryGetValue(ruleType, out BankTransactionRuleResolver<Delegate> del)
             ? del : default;
 
-    public static BankTransactionRule<Delegate?> GetRule(RuleTypes ruleType, Action<BankTransactionView> action)
+    public static BankTransactionRule<Delegate> GetRule(RuleTypes ruleType, Action<BankTransactionView> action)
         => new(ruleType, GetDelegate(ruleType), action);
 }

@@ -87,7 +87,7 @@ public class NotifyingList<TValue> : INotifyCollectionChanged, IList<TValue>, IE
     public int Count => _items.Count;
     public bool IsReadOnly => false;
 
-    private event NotifyCollectionChangedEventHandler? CollectionChanged;
+    private event NotifyCollectionChangedEventHandler? _collectionChanged;
     public event NotifyCollectionChangedEventHandler? CollectionChanged
     {
         add => _collectionChanged += value;

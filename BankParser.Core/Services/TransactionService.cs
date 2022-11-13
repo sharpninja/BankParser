@@ -108,7 +108,7 @@ public class TransactionService : ITransactionService
                 }
                 else
                 {
-                    string value = values[i].Trim();
+                    string value = values[i]?.Trim() ?? "";
                     if (currentField is not null)
                     {
                         currentField = fields.Dequeue();
